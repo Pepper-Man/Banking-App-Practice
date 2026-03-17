@@ -1,0 +1,20 @@
+﻿# VS
+.vs/
+*.user
+*userosscache
+*.sln
+*.vcxproj
+*.filters
+
+# CMAKE
+out/
+build/
+bin/
+obj/
+
+# Project specific
+data.csv
+
+# System
+.DS_Store
+Thumbs.db
