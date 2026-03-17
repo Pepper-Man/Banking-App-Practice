@@ -104,6 +104,26 @@ TEST_CASE("Saved data file is correctly cleared") {
     // Test
     REQUIRE(bank_system::read_account_data().empty());
 }
+
+TEST_CASE("Saved user data can be loaded again") {
+    // Ensure no stale data
+    bank_system::clear_saved_data();
+
+    // Make bank and user in scope
+    {
+        bank_system::Bank bank;
+        bank.create_account("userZ", "password123", "Mr Zed", 25);
+        bank_system::Account* accZ = bank.login("userZ", "password123");
+        accZ->deposit(420.69);
+    } // Bank destructor runs here, should save data to file
+
+    // Open new bank, should load data file
+    bank_system::Bank new_bank;
+    // Log in to account that should exist
+    bank_system::Account* new_accZ = new_bank.login("userZ", "password123");
+    REQUIRE(new_accZ != nullptr);
+    REQUIRE(new_accZ->get_balance() == 420.69);
+}
 #endif
 
 #ifdef RUN_LONG_TESTS
