@@ -5,8 +5,9 @@
 namespace bank_system {
 	class Account {
 	public:
-		// Constructor
+		// Constructors
 		Account(std::string username, std::string password, std::string legal_name, int age);
+		Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance);
 
 		// Public Interface
 		// Getters

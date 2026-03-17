@@ -34,6 +34,7 @@ TEST_CASE("Account prevents over-withdrawal") {
 // --- BANK LEVEL TESTS ---
 
 TEST_CASE("Bank creates multiple unique accounts") {
+    bank_system::clear_saved_data();
     bank_system::Bank bank;
     REQUIRE(bank.create_account("user1", "p1", "Name 1", 20) == true);
     REQUIRE(bank.create_account("user2", "p2", "Name 2", 21) == true);
@@ -89,7 +90,19 @@ TEST_CASE("Multiple accounts maintain separate balances") {
 
     REQUIRE(accA->get_balance() == 100.69);
     REQUIRE(accB->get_balance() == 250.42);
-    bank.save();
+}
+
+TEST_CASE("Saved data file is correctly cleared") {
+    bank_system::Bank bank;
+    bank.create_account("userA", "pA", "Person A", 20);
+    bank_system::Account* accA = bank.login("userA", "pA");
+    accA->deposit(1234.0);
+
+    // Clear
+    bank_system::clear_saved_data();
+
+    // Test
+    REQUIRE(bank_system::read_account_data().empty());
 }
 #endif
 
@@ -103,8 +116,8 @@ TEST_CASE("Create, deposit to and save 1000 accounts") {
         acc->deposit(i);
         REQUIRE(acc->get_balance() == i);
     }
-    bank.save();
 }
+
 #endif
 
 void get_going() {

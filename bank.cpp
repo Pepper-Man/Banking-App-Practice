@@ -23,7 +23,15 @@ namespace bank_system {
 		return _accounts.contains(username);
 	}
 
+	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
+		return read_account_data();
+	}
+
 	void Bank::save() {
 		write_account_data(_accounts);
+	}
+
+	Bank::~Bank() {
+		save();
 	}
 }

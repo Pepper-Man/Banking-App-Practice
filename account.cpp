@@ -8,6 +8,10 @@ namespace bank_system {
 		_balance(0), _username(username), _password_hash(psw_hash(password)), _legal_name(legal_name), _age(age) {
 	}
 
+	Account::Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance) :
+		_username(username), _password_hash(psw_hash), _legal_name(legal_name), _age(age), _balance(balance) {
+	}
+
 	double Account::get_balance() const {
 		return _balance;
 	}

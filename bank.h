@@ -7,6 +7,8 @@
 namespace bank_system {
 	class Bank {
 	public:
+		// Immediately load saved account data
+		Bank() : _accounts(load()) {}
 		// True if acc created, false if username taken
 		bool create_account(std::string user, std::string pass, std::string name, int age);
 
@@ -15,7 +17,10 @@ namespace bank_system {
 
 		bool user_exists(const std::string& username) const;
 
+		std::unordered_map<std::string, std::unique_ptr<Account>> load();
 		void save();
+
+		~Bank();
 
 	private:
 		// Faster to search than a simple vector; acc username is the key

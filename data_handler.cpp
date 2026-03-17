@@ -1,11 +1,39 @@
 #include "data_handler.h"
 #include <fstream>
 #include <stdexcept>
+#include <vector>
+#include <sstream>
 
 namespace bank_system {
-	std::vector<std::unique_ptr<Account>> read_account_data() {
-		std::vector<std::unique_ptr<Account>> accounts;
+	void clear_saved_data() {
+		std::ofstream file("data.csv");
+		file.close();
+	}
 
+	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data() {
+		std::unordered_map<std::string, std::unique_ptr<Account>> accounts;
+		std::string acc_str;
+		std::ifstream data_file("data.csv");
+
+		while (std::getline(data_file, acc_str)) {
+			if (acc_str.empty()) continue; // Skip empty lines
+
+			// Split csv line into parts
+			std::vector<std::string> acc_data;
+			std::istringstream ss(acc_str);
+			std::string part;
+			while (std::getline(ss, part, ',')) {
+				acc_data.push_back(part);
+			}
+
+			// Now read parts and create acc
+			std::string username = acc_data[0];
+			std::unique_ptr<Account> acc = std::make_unique<Account>(username, acc_data[1], acc_data[2], std::stoi(acc_data[3]), std::stod(acc_data[4]));
+
+			accounts.try_emplace(username, std::move(acc));
+		}
+
+		data_file.close();
 		return accounts;
 	}
 
