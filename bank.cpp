@@ -3,10 +3,9 @@
 
 namespace bank_system {
 	bool Bank::create_account(std::string user, std::string pass, std::string name, int age) {
-		if (user_exists(user)) return false;
-
-		_accounts[user] = std::make_unique<Account>(user, pass, name, age);
-		return true;
+		// try_emplace only emplaces if key doesnt exist - returns a pair, second is a bool, true if placed, false if already exists
+		auto [it, inserted] = _accounts.try_emplace(user, std::make_unique<Account>(user, pass, name, age));
+		return inserted;
 	}
 
 	bank_system::Account* Bank::login(std::string username, std::string password) {
