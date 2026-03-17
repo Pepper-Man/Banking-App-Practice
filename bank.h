@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <vector>
 #include "account.h"
 
 namespace bank_system {
@@ -17,6 +18,9 @@ namespace bank_system {
 
 		bool user_exists(const std::string& username) const;
 
+		void deposit_to_account(const std::string& username, double amount);
+		void withdraw_from_account(const std::string& username, double amount);
+
 		std::unordered_map<std::string, std::unique_ptr<Account>> load();
 		void save();
 
@@ -25,5 +29,8 @@ namespace bank_system {
 	private:
 		// Faster to search than a simple vector; acc username is the key
 		std::unordered_map<std::string, std::unique_ptr<Account>> _accounts;
+
+		void log_transac(Account* acc, std::string type, double amount);
+		std::vector<std::string> _transaction_buffer;
 	};
 }

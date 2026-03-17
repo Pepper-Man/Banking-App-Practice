@@ -1,10 +1,11 @@
 #include <iostream>
+#include <fstream>
 #include "simple_test.h"
 #include "account.h"
 #include "bank.h"
 #include "data_handler.h"
 
-// Define this to ensure all banking tests run
+// Comment these out to disable certain tests
 #define RUN_QUICK_TESTS
 #define RUN_LONG_TESTS
 
@@ -70,7 +71,7 @@ TEST_CASE("Operations on logged-in account persist in Bank") {
     REQUIRE(acc != nullptr);
 
     // Deposit money via the pointer
-    acc->deposit(500.0);
+    bank.deposit_to_account("saver", 500.0);
     REQUIRE(acc->get_balance() == 500.0);
 
     // Simulate "re-logging in" to ensure data is still there
@@ -82,11 +83,11 @@ TEST_CASE("Multiple accounts maintain separate balances") {
     bank_system::Bank bank;
     bank.create_account("userA", "pA", "Person A", 20);
     bank_system::Account* accA = bank.login("userA", "pA");
-    accA->deposit(100.69);
+    bank.deposit_to_account("userA", 100.69);
 
     bank.create_account("userB", "pB", "Person B", 30);
     bank_system::Account* accB = bank.login("userB", "pB");
-    accB->deposit(250.42);
+    bank.deposit_to_account("userB", 250.42);
 
     REQUIRE(accA->get_balance() == 100.69);
     REQUIRE(accB->get_balance() == 250.42);
@@ -96,7 +97,7 @@ TEST_CASE("Saved data file is correctly cleared") {
     bank_system::Bank bank;
     bank.create_account("userA", "pA", "Person A", 20);
     bank_system::Account* accA = bank.login("userA", "pA");
-    accA->deposit(1234.0);
+    bank.deposit_to_account("userA", 1234.0);
 
     // Clear
     bank_system::clear_saved_data();
@@ -114,7 +115,7 @@ TEST_CASE("Saved user data can be loaded again") {
         bank_system::Bank bank;
         bank.create_account("userZ", "password123", "Mr Zed", 25);
         bank_system::Account* accZ = bank.login("userZ", "password123");
-        accZ->deposit(420.69);
+        bank.deposit_to_account("userZ", 420.69);
     } // Bank destructor runs here, should save data to file
 
     // Open new bank, should load data file
@@ -123,6 +124,31 @@ TEST_CASE("Saved user data can be loaded again") {
     bank_system::Account* new_accZ = new_bank.login("userZ", "password123");
     REQUIRE(new_accZ != nullptr);
     REQUIRE(new_accZ->get_balance() == 420.69);
+}
+
+TEST_CASE("Transactions are cleared correctly") {
+    bank_system::clear_transac_data();
+
+    std::ifstream transac_file("transactions.log");
+    REQUIRE(transac_file.is_open());
+    REQUIRE(transac_file.peek() == EOF);
+}
+
+TEST_CASE("Transactions are logged correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    {
+        bank_system::Bank bank;
+        bank.create_account("userA", "pA", "Mr A", 30);
+        bank.deposit_to_account("userA", 69.69);
+    }
+    
+    std::ifstream transac_file("transactions.log");
+    REQUIRE(transac_file.is_open());
+    std::string first_line;
+    std::getline(transac_file, first_line);
+    REQUIRE(first_line == "Account: userA, Deposit of 69.69 - New balance: 69.69");
 }
 #endif
 
@@ -133,7 +159,7 @@ TEST_CASE("Create, deposit to and save 1000 accounts") {
         std::string i_str = std::to_string(i);
         bank.create_account("user" + i_str, "p" + i_str, "Person " + i_str, i);
         bank_system::Account* acc = bank.login("user" + i_str, "p" + i_str);
-        acc->deposit(i);
+        bank.deposit_to_account("user" + i_str, i);
         REQUIRE(acc->get_balance() == i);
     }
 }

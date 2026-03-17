@@ -39,13 +39,13 @@ namespace bank_system {
 
 	void Account::deposit(double amount) {
 		if (amount > 0) _balance += amount;
-		write_transac_data(this, "Deposit", amount);
+		
 	}
 
 	bool Account::withdraw(double amount) {
 		if (amount > 0 && amount <= _balance) {
 			_balance -= amount;
-			write_transac_data(this, "Withdrawal", amount);
+			
 			return true;
 		}
 		else {

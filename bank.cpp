@@ -1,5 +1,6 @@
 #include "bank.h"
 #include "data_handler.h"
+#include <sstream>
 
 namespace bank_system {
 	bool Bank::create_account(std::string user, std::string pass, std::string name, int age) {
@@ -23,6 +24,22 @@ namespace bank_system {
 		return _accounts.contains(username);
 	}
 
+	void Bank::deposit_to_account(const std::string& username, double amount) {
+		auto it = _accounts.find(username);
+		if (it != _accounts.end()) {
+			it->second->deposit(amount); // Update the account data
+			log_transac(it->second.get(), "Deposit", amount); // Record the event
+		}
+	}
+
+	void Bank::withdraw_from_account(const std::string& username, double amount) {
+		auto it = _accounts.find(username);
+		if (it != _accounts.end()) {
+			it->second->withdraw(amount);
+			log_transac(it->second.get(), "Withdrawal", amount);
+		}
+	}
+
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
 		return read_account_data();
 	}
@@ -31,7 +48,21 @@ namespace bank_system {
 		write_account_data(_accounts);
 	}
 
+	void Bank::log_transac(Account* acc, std::string type, double amount) {
+		std::stringstream ss;
+		ss << "Account: " << acc->get_username() << ", ";
+		ss << type << " of ";
+		ss << amount << " - New balance: ";
+		ss << acc->get_balance();
+
+		_transaction_buffer.push_back(ss.str());
+	}
+
 	Bank::~Bank() {
+		// Save accounts
 		save();
+
+		// Save transactions
+		write_transac_data(_transaction_buffer);
 	}
 }

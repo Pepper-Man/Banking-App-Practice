@@ -10,6 +10,11 @@ namespace bank_system {
 		file.close();
 	}
 
+	void clear_transac_data() {
+		std::ofstream file("transactions.log");
+		file.close();
+	}
+
 	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data() {
 		std::unordered_map<std::string, std::unique_ptr<Account>> accounts;
 		std::string acc_str;
@@ -56,18 +61,17 @@ namespace bank_system {
 		data_file.close();
 	}
 
-	void write_transac_data(Account* acc, std::string type, double amount) {
+	void write_transac_data(const std::vector<std::string>& transac_data) {
 		std::ofstream audit_file("transactions.log", std::ios_base::app);
 
 		if (!audit_file.is_open()) {
 			throw std::runtime_error("Failed to open transaction log file!");
 		}
 
-		audit_file << "Account: " << acc->get_username() << ", ";
-		audit_file << type << " of ";
-		audit_file << amount << " - New balance: ";
-		audit_file << acc->get_balance();
-		audit_file << "\n";
+		for (const std::string& transaction : transac_data) {
+			audit_file << transaction;
+			audit_file << "\n";
+		}
 		audit_file.close();
 	}
 }
