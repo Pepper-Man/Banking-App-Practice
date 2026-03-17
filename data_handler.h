@@ -9,4 +9,6 @@ namespace bank_system {
 	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data();
 
 	void write_account_data(std::unordered_map<std::string, std::unique_ptr<Account>>& accounts);
+
+	void write_transac_data(Account* acc, std::string type, double amount);
 }

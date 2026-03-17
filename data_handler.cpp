@@ -55,4 +55,19 @@ namespace bank_system {
 
 		data_file.close();
 	}
+
+	void write_transac_data(Account* acc, std::string type, double amount) {
+		std::ofstream audit_file("transactions.log", std::ios_base::app);
+
+		if (!audit_file.is_open()) {
+			throw std::runtime_error("Failed to open transaction log file!");
+		}
+
+		audit_file << "Account: " << acc->get_username() << ", ";
+		audit_file << type << " of ";
+		audit_file << amount << " - New balance: ";
+		audit_file << acc->get_balance();
+		audit_file << "\n";
+		audit_file.close();
+	}
 }
