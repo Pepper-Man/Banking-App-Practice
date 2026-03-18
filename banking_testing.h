@@ -176,6 +176,7 @@ TEST_CASE("User cannot deposit zero or negative amount") {
 }
 #endif
 
+// More complex tests (~>10ms each)
 #ifdef RUN_LONG_TESTS
 TEST_CASE("Create, deposit to and save 1000 accounts") {
     bank_system::Bank bank;
@@ -186,6 +187,52 @@ TEST_CASE("Create, deposit to and save 1000 accounts") {
         bank.deposit_to_account("user" + i_str, i);
         REQUIRE(acc->get_balance() == i);
     }
+}
+
+TEST_CASE("Bank applies interest to all accounts correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    // Test vars
+    const int num_accounts = 1000;
+    const double initial_deposit = 100.00;
+    const double interest_rate = 0.05; // 5% interest
+    const double expected_balance = 105.00;
+
+    {
+        bank_system::Bank bank;
+
+        // Create 1000 accounts with money
+        for (int i = 0; i < num_accounts; i++) {
+            std::string user = "user" + std::to_string(i);
+            bank.create_account(user, "pass123", "Full Name", 30);
+            bank.deposit_to_account(user, initial_deposit);
+        }
+
+        // Apply interest to all
+        bank.apply_monthly_interest(interest_rate);
+
+        // Check a few sample users
+        std::vector<std::string> test_users = { "user0", "user500", "user999" };
+        for (const std::string& username : test_users) {
+            bank_system::Account* acc = bank.login(username, "pass123");
+            REQUIRE(acc != nullptr);
+            REQUIRE(acc->get_balance() == expected_balance);
+        }
+    }
+
+    // Check logging
+    std::ifstream log_file("transactions.log");
+    REQUIRE(log_file.is_open());
+
+    int line_count = 0;
+    std::string dummy;
+    while (std::getline(log_file, dummy)) {
+        line_count++;
+    }
+
+    // Should be 1000 deposit log lines and 1000 interest log lines
+    REQUIRE(line_count == 2000);
 }
 
 #endif

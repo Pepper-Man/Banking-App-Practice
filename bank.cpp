@@ -20,6 +20,16 @@ namespace bank_system {
 		return nullptr;
 	}
 
+	void Bank::apply_monthly_interest(double rate) {
+		if (rate <= 0) return; // Don't take money away, or bother if zero
+
+		for (auto& [username, acc] : _accounts) {
+			double interest = acc->get_balance() * rate;
+			acc->deposit(interest);
+			log_transac(acc.get(), "Interest", interest);
+		}
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}

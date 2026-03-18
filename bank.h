@@ -10,20 +10,25 @@ namespace bank_system {
 	public:
 		// Immediately load saved account data
 		Bank() : _accounts(load()) {}
+
+		// Bank-level functions
 		// True if acc created, false if username taken
 		bool create_account(std::string user, std::string pass, std::string name, int age);
-
 		// Returns a pointer to the account if found, else nullptr
 		Account* login(std::string username, std::string password);
+		// Applies interest to all accounts
+		void apply_monthly_interest(double rate);
 
+		// Account-level functions
 		bool user_exists(const std::string& username) const;
-
 		bool deposit_to_account(const std::string& username, double amount);
 		bool withdraw_from_account(const std::string& username, double amount);
 
+		// Saved account data load+save
 		std::unordered_map<std::string, std::unique_ptr<Account>> load();
 		void save();
 
+		// Destructor
 		~Bank();
 
 	private:
