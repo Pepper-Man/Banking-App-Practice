@@ -18,7 +18,7 @@ namespace bank_system {
 		int get_age() const;
 
 		bool check_password(std::string password) const;
-		void deposit(double amount);
+		bool deposit(double amount);
 		bool withdraw(double amount);
 
 	private:

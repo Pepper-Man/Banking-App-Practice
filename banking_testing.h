@@ -150,6 +150,30 @@ TEST_CASE("Transactions are logged correctly") {
     std::getline(transac_file, first_line);
     REQUIRE(first_line == "Account: userA, Deposit of 69.69 - New balance: 69.69");
 }
+
+TEST_CASE("User cannot withdraw more than balance") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account("userA", "pA", "Mr A", 29);
+    bank.deposit_to_account("userA", 200.00);
+    REQUIRE(bank.withdraw_from_account("userA", 200.01) == false);
+    REQUIRE(bank.withdraw_from_account("userA", 200.00) == true);
+}
+
+TEST_CASE("User cannot deposit zero or negative amount") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account("userA", "pA", "Mr A", 31);
+    REQUIRE(bank.deposit_to_account("userA", 0) == false);
+    REQUIRE(bank.deposit_to_account("userA", 0.00) == false);
+    REQUIRE(bank.deposit_to_account("userA", 0.01) == true);
+    REQUIRE(bank.deposit_to_account("userA", -200.00) == false);
+    REQUIRE(bank.deposit_to_account("userA", -0) == false);
+    REQUIRE(bank.deposit_to_account("userA", 10.00) == true);
+    REQUIRE(bank.deposit_to_account("userA", -0.00) == false);
+}
 #endif
 
 #ifdef RUN_LONG_TESTS

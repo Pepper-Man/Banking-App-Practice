@@ -37,9 +37,12 @@ namespace bank_system {
 		return psw_hash(password) == _password_hash;
 	}
 
-	void Account::deposit(double amount) {
-		if (amount > 0) _balance += amount;
-		
+	bool Account::deposit(double amount) {
+		if (amount > 0) {
+			_balance += amount;
+			return true;
+		}
+		return false;
 	}
 
 	bool Account::withdraw(double amount) {
@@ -48,9 +51,7 @@ namespace bank_system {
 			
 			return true;
 		}
-		else {
-			return false;
-		}
+		return false;
 	}
 
 	std::string Account::psw_hash(const std::string& password) const {

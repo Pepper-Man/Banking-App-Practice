@@ -24,20 +24,28 @@ namespace bank_system {
 		return _accounts.contains(username);
 	}
 
-	void Bank::deposit_to_account(const std::string& username, double amount) {
+	bool Bank::deposit_to_account(const std::string& username, double amount) {
 		auto it = _accounts.find(username);
 		if (it != _accounts.end()) {
-			it->second->deposit(amount); // Update the account data
-			log_transac(it->second.get(), "Deposit", amount); // Record the event
+			// Only log transaction if it is successful/allowed
+			if (it->second->deposit(amount)) {
+				log_transac(it->second.get(), "Deposit", amount); // Record the event
+				return true;
+			}
 		}
+		return false;
 	}
 
-	void Bank::withdraw_from_account(const std::string& username, double amount) {
+	bool Bank::withdraw_from_account(const std::string& username, double amount) {
 		auto it = _accounts.find(username);
 		if (it != _accounts.end()) {
-			it->second->withdraw(amount);
-			log_transac(it->second.get(), "Withdrawal", amount);
+			// Only log transaction if it is successful/allowed
+			if (it->second->withdraw(amount)) {
+				log_transac(it->second.get(), "Withdrawal", amount);
+				return true;
+			}
 		}
+		return false;
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {

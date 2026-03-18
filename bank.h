@@ -18,8 +18,8 @@ namespace bank_system {
 
 		bool user_exists(const std::string& username) const;
 
-		void deposit_to_account(const std::string& username, double amount);
-		void withdraw_from_account(const std::string& username, double amount);
+		bool deposit_to_account(const std::string& username, double amount);
+		bool withdraw_from_account(const std::string& username, double amount);
 
 		std::unordered_map<std::string, std::unique_ptr<Account>> load();
 		void save();
