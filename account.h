@@ -12,15 +12,20 @@ namespace bank_system {
 		// Public Interface
 		// Getters
 		double get_balance() const;
-		void set_balance(double new_balance);
+		
 		std::string get_username() const;
 		std::string get_psw_hash() const;
 		std::string get_leg_name() const;
 		int get_age() const;
 
+		// Setters
+		void set_balance(double new_balance);
+
+		// Other
 		bool check_password(std::string password) const;
 		bool deposit(double amount);
 		bool withdraw(double amount);
+		bool change_password(const std::string& old_password, const std::string& new_password);
 
 	private:
 		std::string psw_hash(const std::string& password) const;

@@ -174,6 +174,18 @@ TEST_CASE("User cannot deposit zero or negative amount") {
     REQUIRE(bank.deposit_to_account("userA", 10.00) == true);
     REQUIRE(bank.deposit_to_account("userA", -0.00) == false);
 }
+
+TEST_CASE("User can change password, then log in with new password") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account("userA", "pA", "Mr A", 31);
+    REQUIRE(bank.request_password_change("userA", "pA", "pZ"));
+    bank_system::Account* acc = bank.login("userA", "pA");
+    REQUIRE(acc == nullptr);
+    acc = bank.login("userA", "pZ");
+    REQUIRE(acc != nullptr);
+}
 #endif
 
 // More complex tests (~>10ms each)

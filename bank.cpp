@@ -78,10 +78,25 @@ namespace bank_system {
 		auto it = _accounts.find(username);
 		if (it != _accounts.end()) {
 			// Only log transaction if it is successful/allowed
-			if (it->second->withdraw(amount)) {
+			bool success = it->second->withdraw(amount);
+
+			if (success) {
 				log_transac(it->second.get(), "Withdrawal", amount);
 				return true;
 			}
+		}
+		return false;
+	}
+
+	bool Bank::request_password_change(const std::string& user, const std::string& old_p, const std::string& new_p) {
+		auto it = _accounts.find(user);
+		if (it != _accounts.end()) {
+			bool success = it->second->change_password(old_p, new_p);
+
+			if (success) {
+				log_transac(it->second.get(), "Password Change", 0.0);
+			}
+			return true;
 		}
 		return false;
 	}

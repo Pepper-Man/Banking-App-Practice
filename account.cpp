@@ -58,6 +58,16 @@ namespace bank_system {
 		return false;
 	}
 
+	bool Account::change_password(const std::string& old_password, const std::string& new_password) {
+		if (new_password.empty() || old_password == new_password) return false;
+
+		if (psw_hash(old_password) == _password_hash) {
+			_password_hash = psw_hash(new_password);
+			return true;
+		}
+		return false;
+	}
+
 	std::string Account::psw_hash(const std::string& password) const {
 		std::hash<std::string> hasher;
 		size_t hashed_val = hasher(password);
