@@ -235,6 +235,41 @@ TEST_CASE("Bank applies interest to all accounts correctly") {
     REQUIRE(line_count == 2000);
 }
 
+TEST_CASE("Interest sweep mainatins data integrity on failure") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    // Test vars
+    const int num_accounts = 1000;
+    const double initial_deposit = 100.00;
+    const double interest_rate = 500.0; // Intentionally bad interest value
+
+    bank_system::Bank bank;
+    // Create 1000 accounts with money
+    for (int i = 0; i < num_accounts; i++) {
+        std::string user = "user" + std::to_string(i);
+        bank.create_account(user, "pass123", "Full Name", 30);
+        bank.deposit_to_account(user, initial_deposit);
+    }
+
+    bool caught_exception = false;
+    try {
+        bank.apply_monthly_interest(interest_rate);
+    }
+    catch (const std::exception& e) {
+        caught_exception = true;
+    }
+
+    REQUIRE(caught_exception == true);
+    // Now check that all balances are still 100.0
+    for (int i = 0; i < num_accounts; i++) {
+        std::string user = "user" + std::to_string(i);
+        bank_system::Account* acc = bank.login(user, "pass123");
+        REQUIRE(acc != nullptr);
+        REQUIRE(acc->get_balance() == initial_deposit);
+    }
+}
+
 #endif
 
 void get_going() {

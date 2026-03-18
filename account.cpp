@@ -13,6 +13,10 @@ namespace bank_system {
 		_username(username), _password_hash(psw_hash), _legal_name(legal_name), _age(age), _balance(balance) {
 	}
 
+	void Account::set_balance(double new_balance) {
+		_balance = new_balance;
+	}
+
 	double Account::get_balance() const {
 		return _balance;
 	}

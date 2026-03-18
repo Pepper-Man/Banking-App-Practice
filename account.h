@@ -12,6 +12,7 @@ namespace bank_system {
 		// Public Interface
 		// Getters
 		double get_balance() const;
+		void set_balance(double new_balance);
 		std::string get_username() const;
 		std::string get_psw_hash() const;
 		std::string get_leg_name() const;

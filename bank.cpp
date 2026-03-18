@@ -21,12 +21,40 @@ namespace bank_system {
 	}
 
 	void Bank::apply_monthly_interest(double rate) {
-		if (rate <= 0) return; // Don't take money away, or bother if zero
+		// This will hold the "snapshot" of the current (aka old) data
+		// so if anything goes wrong, we just undo back to it
+		std::unordered_map<std::string, double> rollback_map;
+		rollback_map.reserve(_accounts.size()); // Avoid keep resizing the map as the loop goes on - RAM is cheaper than speed here tbh
 
-		for (auto& [username, acc] : _accounts) {
-			double interest = acc->get_balance() * rate;
-			acc->deposit(interest);
-			log_transac(acc.get(), "Interest", interest);
+		std::size_t transactions_added = 0;
+
+		try {
+			if (rate <= 0 || rate > 1.0) throw std::invalid_argument("Rate must be > 0.0 and < 1.0"); 
+
+			for (auto& [username, acc] : _accounts) {
+				// Record old state before changing it
+				rollback_map[username] = acc->get_balance();
+
+				double interest = acc->get_balance() * rate;
+				acc->deposit(interest);
+				log_transac(acc.get(), "Interest", interest);
+				transactions_added++;
+			}
+		}
+		// Catch ANY exception
+		catch (const std::exception& e) {
+			// Since something, anything, went wrong, roll back the data
+			// Restore everyones old balance
+			for (auto& [username, old_balance] : rollback_map) {
+				_accounts[username]->set_balance(old_balance);
+			}
+
+			// Remove bad logs
+			for (std::size_t i = 0; i < transactions_added; i++) {
+				_transaction_buffer.pop_back();
+			}
+
+			throw std::runtime_error("Interest sweep failed! Data rolled back. Error: " + std::string(e.what()));
 		}
 	}
 
