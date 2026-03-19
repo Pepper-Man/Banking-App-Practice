@@ -258,6 +258,24 @@ TEST_CASE("Invalid transfer should fail") {
     bank_system::Account* accB = bank.login(userB, "pB");
     REQUIRE(accA->get_balance() == accA_start_amount && accB->get_balance() == accB_start_amount);
 }
+
+TEST_CASE("Bank returns transaction history of account correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account("userA", "pA", "Mr A", 25);
+    bank.create_account("userB", "pB", "Mr B", 30);
+    bank.deposit_to_account("userA", 100.0);
+    bank.deposit_to_account("userA", 50.0);
+    bank.deposit_to_account("userB", 120.0);
+    bank.deposit_to_account("userB", 150.0);
+    bank.deposit_to_account("userB", 30.0);
+    bank.deposit_to_account("userA", 50.0);
+    bank.deposit_to_account("userB", 150.0);
+
+    REQUIRE(bank.get_acc_history("userA").size() == 3);
+    REQUIRE(bank.get_acc_history("userB").size() == 4);
+}
 #endif
 
 // More complex tests (~>10ms each)
@@ -352,6 +370,32 @@ TEST_CASE("Interest sweep mainatins data integrity on failure") {
         REQUIRE(acc != nullptr);
         REQUIRE(acc->get_balance() == initial_deposit);
     }
+}
+
+TEST_CASE("Bank returns account history correctly from saved file and large amount of transactions") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    int num_accounts = 1000;
+
+    {
+        bank_system::Bank bank;
+        // Create 1000 accounts with money
+        for (int i = 0; i < num_accounts; i++) {
+            std::string user = "user" + std::to_string(i);
+            bank.create_account(user, "pass123", "Full Name", 30);
+            bank.deposit_to_account(user, 100.00);
+            bank.withdraw_from_account(user, 10.00);
+        }
+
+        // Bank closes, saves 2000 transactions to file
+    }
+
+    // Open new bank, read acc history
+    bank_system::Bank bank;
+    REQUIRE(bank.get_acc_history("user500").size() == 2);
+    bank.deposit_to_account("user500", 12.00);
+    REQUIRE(bank.get_acc_history("user500").size() == 3);
 }
 
 #endif

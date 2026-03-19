@@ -25,6 +25,7 @@ namespace bank_system {
 		bool withdraw_from_account(const std::string& username, double amount);
 		bool request_password_change(const std::string& user, const std::string& old_p, const std::string& new_p);
 		bool transfer(const std::string& from_user, const std::string& to_user, double amount);
+		std::vector<std::string> get_acc_history(const std::string& username);
 
 		// Saved account data load+save
 		std::unordered_map<std::string, std::unique_ptr<Account>> load();

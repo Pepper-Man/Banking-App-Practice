@@ -1,6 +1,7 @@
 #include "bank.h"
 #include "data_handler.h"
 #include <sstream>
+#include <fstream>
 
 namespace bank_system {
 	bool Bank::create_account(std::string user, std::string pass, std::string name, int age) {
@@ -136,6 +137,35 @@ namespace bank_system {
 
 			throw std::runtime_error("Transfer failed! Data rolled back. Error: " + std::string(e.what()));
 		}
+	}
+
+	std::vector<std::string> Bank::get_acc_history(const std::string& username) {
+		std::vector<std::string> acc_history;
+		acc_history.reserve(10); // Don't know how many, but better not to start at zero
+		// 9 is the length of "Account: "
+		int read_start_index = 9;
+
+		// Read past from file
+		std::ifstream transac_file("transactions.log");
+		std::string transaction_line;
+		while (getline(transac_file, transaction_line)) {
+			if (transaction_line.empty()) continue;
+
+			std::string trans_acc_name = transaction_line.substr(read_start_index, transaction_line.find(',') - read_start_index);
+			if (trans_acc_name == username) {
+				acc_history.push_back(transaction_line);
+			}
+		}
+
+		// Read "present" from buffer
+		for (const std::string& transaction : _transaction_buffer) {
+			std::string trans_acc_name = transaction.substr(read_start_index, transaction.find(',') - read_start_index);
+			if (trans_acc_name == username) {
+				acc_history.push_back(transaction);
+			}
+		}
+
+		return acc_history;
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
