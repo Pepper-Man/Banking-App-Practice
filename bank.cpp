@@ -101,6 +101,43 @@ namespace bank_system {
 		return false;
 	}
 
+	bool Bank::transfer(const std::string& from_user, const std::string& to_user, double amount) {
+		// Can't transfer between same account
+		if (from_user == to_user) return false;
+
+		// Verify both accounts exist, exit early if not
+		auto from_it = _accounts.find(from_user);
+		auto to_it = _accounts.find(to_user);
+		if (from_it == _accounts.end() || to_it == _accounts.end()) return false;
+
+		// Create backups
+		double from_balance_backup = from_it->second->get_balance();
+		double to_balance_backup = to_it->second->get_balance();
+
+		// Ensure from acc has enough funds
+		if (amount > from_balance_backup) throw std::invalid_argument("Insufficient funds for transfer!");
+
+		// Try perform transaction, catch ANY exception
+		try {
+			// Mutate objects directly, no logging
+			from_it->second->withdraw(amount);
+			to_it->second->deposit(amount);
+
+			// Log only once both operations are successful
+			log_transac(from_it->second.get(), "Transfer Out", amount);
+			log_transac(to_it->second.get(), "Transfer In", amount);
+
+			return true;
+		}
+		catch (const std::exception& e) {
+			// Revert balances
+			from_it->second->set_balance(from_balance_backup);
+			to_it->second->set_balance(to_balance_backup);
+
+			throw std::runtime_error("Transfer failed! Data rolled back. Error: " + std::string(e.what()));
+		}
+	}
+
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
 		return read_account_data();
 	}

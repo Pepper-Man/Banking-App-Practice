@@ -180,11 +180,83 @@ TEST_CASE("User can change password, then log in with new password") {
     bank_system::clear_transac_data();
     bank_system::Bank bank;
     bank.create_account("userA", "pA", "Mr A", 31);
+
+    // Make sure change is successful
     REQUIRE(bank.request_password_change("userA", "pA", "pZ"));
+
+    // Attempt login with old password, should fail
     bank_system::Account* acc = bank.login("userA", "pA");
     REQUIRE(acc == nullptr);
+
+    // Attempt login with new password, should succeed
     acc = bank.login("userA", "pZ");
     REQUIRE(acc != nullptr);
+}
+
+TEST_CASE("Bank can transfer amounts between accounts successfully") {
+    // Test vars
+    std::string userA = "userA";
+    std::string userB = "userB";
+    double accA_start_amount = 100.0;
+    double accB_start_amount = 100.0;
+    double expected_total = accA_start_amount + accB_start_amount;
+
+    // Set up bank and accounts
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account(userA, "pA", "Mr A", 25);
+    bank.create_account(userB, "pB", "Mr B", 30);
+    bank.deposit_to_account(userA, accA_start_amount);
+    bank.deposit_to_account(userB, accB_start_amount);
+
+    // Transfer should not throw
+    bool caught_exception = false;
+    try {
+        bank.transfer(userA, userB, accA_start_amount / 2.0);
+    }
+    catch (const std::exception& e) {
+        caught_exception = true;
+    }
+    REQUIRE(caught_exception == false);
+
+    // Check that account values total is still the same
+    bank_system::Account* accA = bank.login(userA, "pA");
+    bank_system::Account* accB = bank.login(userB, "pB");
+    REQUIRE(accA->get_balance() + accB->get_balance() == expected_total);
+}
+
+TEST_CASE("Invalid transfer should fail") {
+    // Test vars
+    std::string userA = "userA";
+    std::string userB = "userB";
+    double accA_start_amount = 100.0;
+    double accB_start_amount = 100.0;
+    double expected_total = accA_start_amount + accB_start_amount;
+
+    // Set up bank and accounts
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account(userA, "pA", "Mr A", 25);
+    bank.create_account(userB, "pB", "Mr B", 30);
+    bank.deposit_to_account(userA, accA_start_amount);
+    bank.deposit_to_account(userB, accB_start_amount);
+
+    // Transfer should throw
+    bool caught_exception = false;
+    try {
+        bank.transfer(userA, userB, accA_start_amount * 2.0); // Too much!
+    }
+    catch (const std::exception& e) {
+        caught_exception = true;
+    }
+    REQUIRE(caught_exception == true);
+
+    // Check that account values have not been altered
+    bank_system::Account* accA = bank.login(userA, "pA");
+    bank_system::Account* accB = bank.login(userB, "pB");
+    REQUIRE(accA->get_balance() == accA_start_amount && accB->get_balance() == accB_start_amount);
 }
 #endif
 
