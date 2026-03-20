@@ -6,6 +6,11 @@
 #include "account.h"
 
 namespace bank_system {
+	enum class AccountType {
+		Standard,
+		Savings
+	};
+
 	class Bank {
 	public:
 		// Immediately load saved account data
@@ -13,7 +18,7 @@ namespace bank_system {
 
 		// Bank-level functions
 		// True if acc created, false if username taken
-		bool create_account(std::string user, std::string pass, std::string name, int age);
+		bool create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double limit = 0.0);
 		// Returns a pointer to the account if found, else nullptr
 		Account* login(std::string username, std::string password);
 		// Applies interest to all accounts

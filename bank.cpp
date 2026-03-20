@@ -2,12 +2,32 @@
 #include "data_handler.h"
 #include <sstream>
 #include <fstream>
+#include <exception>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include "account.h"
+#include "savings_account.h"
 
 namespace bank_system {
-	bool Bank::create_account(std::string user, std::string pass, std::string name, int age) {
-		// try_emplace only emplaces if key doesnt exist - returns a pair, second is a bool, true if placed, false if already exists
-		auto [it, inserted] = _accounts.try_emplace(user, std::make_unique<Account>(user, pass, name, age));
-		return inserted;
+	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double limit) {
+		if (_accounts.find(user) != _accounts.end()) return false; // Account already exists!
+
+		std::unique_ptr<Account> new_acc;
+
+		switch (type) {
+		case AccountType::Savings:
+			new_acc = std::make_unique<SavingsAccount>(user, pass, name, age, limit);
+			break;
+		case AccountType::Standard:
+		default:
+			new_acc = std::make_unique<Account>(user, pass, name, age);
+			break;
+		}
+
+		_accounts[user] = std::move(new_acc);
+		return true;
 	}
 
 	bank_system::Account* Bank::login(std::string username, std::string password) {

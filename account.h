@@ -25,7 +25,7 @@ namespace bank_system {
 		// Other
 		bool check_password(std::string password) const;
 		bool deposit(double amount);
-		bool withdraw(double amount);
+		virtual bool withdraw(double amount);
 		bool change_password(const std::string& old_password, const std::string& new_password);
 		void add_to_history(const std::string& transaction);
 
