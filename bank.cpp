@@ -18,7 +18,7 @@ namespace bank_system {
 
 		switch (type) {
 		case AccountType::Savings:
-			new_acc = std::make_unique<SavingsAccount>(user, pass, name, age, limit);
+			new_acc = std::make_unique<SavingsAccount>(user, pass, name, age, limit, type);
 			break;
 		case AccountType::Standard:
 		default:
@@ -56,7 +56,12 @@ namespace bank_system {
 				// Record old state before changing it
 				rollback_map[username] = acc->get_balance();
 
-				double interest = acc->get_balance() * rate;
+				// Double interest for Savings accounts!
+				double current_rate = rate;
+				if (acc->get_type() == bank_system::AccountType::Savings) current_rate *= 2.0;
+
+				// Apply interest and log
+				double interest = acc->get_balance() * current_rate;
 				acc->deposit(interest);
 				log_transac(acc.get(), "Interest", interest);
 				transactions_added++;

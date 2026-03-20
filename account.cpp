@@ -5,12 +5,12 @@
 #include <iomanip>
 
 namespace bank_system {
-	Account::Account(std::string username, std::string password, std::string legal_name, int age) :
-		_balance(0), _username(username), _password_hash(psw_hash(password)), _legal_name(legal_name), _age(age) {
+	Account::Account(std::string username, std::string password, std::string legal_name, int age, bank_system::AccountType type) :
+		_type(type), _balance(0), _username(username), _password_hash(psw_hash(password)), _legal_name(legal_name), _age(age) {
 	}
 
-	Account::Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance) :
-		_username(username), _password_hash(psw_hash), _legal_name(legal_name), _age(age), _balance(balance) {
+	Account::Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance, bank_system::AccountType type) :
+		_type(type), _username(username), _password_hash(psw_hash), _legal_name(legal_name), _age(age), _balance(balance) {
 	}
 
 	void Account::set_balance(double new_balance) {
@@ -43,6 +43,10 @@ namespace bank_system {
 
 	std::vector<std::string> Account::get_history() const {
 		return _history;
+	}
+
+	bank_system::AccountType Account::get_type() const {
+		return _type;
 	}
 
 	bool Account::check_password(std::string password) const {

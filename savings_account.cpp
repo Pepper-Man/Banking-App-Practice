@@ -3,13 +3,13 @@
 #include "account.h"
 
 namespace bank_system {
-	SavingsAccount::SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double limit)
-		: Account(username, password, legal_name, age) {
+	SavingsAccount::SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double limit, bank_system::AccountType type)
+		: Account(username, password, legal_name, age, type) {
 		_withdraw_limit = limit;
 	}
 
-	SavingsAccount::SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double balance, double limit)
-		: Account(username, password, legal_name, age, balance) {
+	SavingsAccount::SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double balance, double limit, bank_system::AccountType type)
+		: Account(username, password, legal_name, age, balance, type) {
 		_withdraw_limit = limit;
 	}
 

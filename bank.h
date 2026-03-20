@@ -4,13 +4,9 @@
 #include <memory>
 #include <vector>
 #include "account.h"
+#include "constants.h"
 
 namespace bank_system {
-	enum class AccountType {
-		Standard,
-		Savings
-	};
-
 	class Bank {
 	public:
 		// Immediately load saved account data

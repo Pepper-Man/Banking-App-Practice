@@ -2,13 +2,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "constants.h"
 
 namespace bank_system {
 	class Account {
 	public:
 		// Constructors
-		Account(std::string username, std::string password, std::string legal_name, int age);
-		Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance);
+		Account(std::string username, std::string password, std::string legal_name, int age, bank_system::AccountType type = bank_system::AccountType::Standard);
+		Account(std::string username, std::string psw_hash, std::string legal_name, int age, double balance, bank_system::AccountType type = bank_system::AccountType::Standard);
 
 		// Public Interface
 		// Getters
@@ -18,6 +19,7 @@ namespace bank_system {
 		std::string get_leg_name() const;
 		int get_age() const;
 		std::vector<std::string> get_history() const;
+		bank_system::AccountType get_type() const;
 
 		// Setters
 		void set_balance(double new_balance);
@@ -39,6 +41,7 @@ namespace bank_system {
 		std::string _legal_name;
 		int _age;
 		std::vector<std::string> _history;
+		bank_system::AccountType _type;
 	};
 
 	void bank_ui();
