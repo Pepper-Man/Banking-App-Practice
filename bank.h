@@ -5,6 +5,7 @@
 #include <vector>
 #include "account.h"
 #include "constants.h"
+#include <string>
 
 namespace bank_system {
 	class Bank {
@@ -14,7 +15,7 @@ namespace bank_system {
 
 		// Bank-level functions
 		// True if acc created, false if username taken
-		bool create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double limit = 0.0);
+		bool create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit = 0.0, double b_limit = 0.0);
 		// Returns a pointer to the account if found, else nullptr
 		Account* login(std::string username, std::string password);
 		// Applies interest to all accounts

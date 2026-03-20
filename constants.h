@@ -2,6 +2,7 @@
 namespace bank_system {
 	enum class AccountType {
 		Standard,
-		Savings
+		Savings,
+		Junior
 	};
 }

@@ -5,6 +5,11 @@
 #include "bank.h"
 #include "data_handler.h"
 #include "savings_account.h"
+#include <cstdio>
+#include <exception>
+#include <string>
+#include <vector>
+#include "constants.h"
 
 // Comment these out to disable certain tests
 #define RUN_QUICK_TESTS
@@ -294,6 +299,19 @@ TEST_CASE("Savings account withdraw limit works correctly") {
     bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_acc);
     REQUIRE(savings_acc->get_balance() == 100.0);
     REQUIRE(savings_acc->withdraw(101.0) == false);
+}
+
+TEST_CASE("Junior account cannot exceed balance limit") {
+    double balance_limit = 500.00;
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
+    REQUIRE(bank.deposit_to_account("userA", 499.00) == true);
+    REQUIRE(bank.deposit_to_account("userA", 1.00) == true);
+    REQUIRE(bank.deposit_to_account("userA", 10.00) == false);
+    REQUIRE(bank.deposit_to_account("userA", 0.01) == false);
+    REQUIRE(bank.withdraw_from_account("userA", 500.00) == true);
 }
 #endif
 
