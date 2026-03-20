@@ -1,17 +1,17 @@
+#include "account.h"
 #include "bank.h"
+#include "constants.h"
 #include "data_handler.h"
-#include <sstream>
-#include <fstream>
+#include "junior_account.h"
+#include "savings_account.h"
 #include <exception>
+#include <fstream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include "account.h"
-#include "savings_account.h"
-#include "junior_account.h"
 #include <utility>
-#include "constants.h"
 
 namespace bank_system {
 	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit, double b_limit) {

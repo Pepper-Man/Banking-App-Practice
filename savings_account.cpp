@@ -1,6 +1,7 @@
+#include "account.h"
+#include "constants.h"
 #include "savings_account.h"
 #include <string>
-#include "account.h"
 
 namespace bank_system {
 	SavingsAccount::SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double limit, bank_system::AccountType type)

@@ -1,8 +1,8 @@
 #pragma once
+#include "timer_util.h"
 #include <iostream>
 #include <string>
 #include <vector>
-#include "timer_util.h"
 
 struct TestCase {
     std::string name;

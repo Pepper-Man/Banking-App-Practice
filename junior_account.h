@@ -1,6 +1,6 @@
 #include "account.h"
-#include <string>
 #include "constants.h"
+#include <string>
 
 namespace bank_system {
 	class JuniorAccount : public Account {

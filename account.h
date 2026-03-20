@@ -1,7 +1,7 @@
 #pragma once
+#include "constants.h"
 #include <string>
 #include <vector>
-#include "constants.h"
 
 namespace bank_system {
 	class Account {

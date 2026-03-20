@@ -1,15 +1,15 @@
-#include <iostream>
-#include <fstream>
-#include "simple_test.h"
 #include "account.h"
 #include "bank.h"
+#include "constants.h"
 #include "data_handler.h"
 #include "savings_account.h"
+#include "simple_test.h"
 #include <cstdio>
 #include <exception>
+#include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
-#include "constants.h"
 
 // Comment these out to disable certain tests
 #define RUN_QUICK_TESTS

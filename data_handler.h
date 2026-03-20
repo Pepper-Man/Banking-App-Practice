@@ -1,7 +1,9 @@
 #pragma once
-#include <unordered_map>
-#include <memory>
 #include "account.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace bank_system {
 	void clear_saved_data();

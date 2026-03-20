@@ -1,12 +1,12 @@
 #include "account.h"
-#include <sstream>
+#include "constants.h"
 #include <iomanip>
 #include <ios>
 #include <iostream>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
-#include "constants.h"
 
 namespace bank_system {
 	Account::Account(std::string username, std::string password, std::string legal_name, int age, bank_system::AccountType type) :
