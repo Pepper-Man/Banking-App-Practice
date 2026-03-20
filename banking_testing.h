@@ -273,8 +273,11 @@ TEST_CASE("Bank returns transaction history of account correctly") {
     bank.deposit_to_account("userA", 50.0);
     bank.deposit_to_account("userB", 150.0);
 
-    REQUIRE(bank.get_acc_history("userA").size() == 3);
-    REQUIRE(bank.get_acc_history("userB").size() == 4);
+    bank_system::Account* accA = bank.login("userA", "pA");
+    bank_system::Account* accB = bank.login("userB", "pB");
+
+    REQUIRE(accA->get_history().size() == 3);
+    REQUIRE(accB->get_history().size() == 4);
 }
 #endif
 
@@ -393,9 +396,11 @@ TEST_CASE("Bank returns account history correctly from saved file and large amou
 
     // Open new bank, read acc history
     bank_system::Bank bank;
-    REQUIRE(bank.get_acc_history("user500").size() == 2);
+    bank_system::Account* acc500 = bank.login("user500", "pass123");
+    REQUIRE(acc500 != nullptr);
+    REQUIRE(acc500->get_history().size() == 2);
     bank.deposit_to_account("user500", 12.00);
-    REQUIRE(bank.get_acc_history("user500").size() == 3);
+    REQUIRE(acc500->get_history().size() == 3);
 }
 
 #endif

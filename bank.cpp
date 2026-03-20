@@ -139,37 +139,29 @@ namespace bank_system {
 		}
 	}
 
-	std::vector<std::string> Bank::get_acc_history(const std::string& username) {
-		std::vector<std::string> acc_history;
-		acc_history.reserve(10); // Don't know how many, but better not to start at zero
-		// 9 is the length of "Account: "
-		int read_start_index = 9;
-
+	void Bank::get_acc_history() {
 		// Read past from file
 		std::ifstream transac_file("transactions.log");
 		std::string transaction_line;
 		while (getline(transac_file, transaction_line)) {
 			if (transaction_line.empty()) continue;
 
-			std::string trans_acc_name = transaction_line.substr(read_start_index, transaction_line.find(',') - read_start_index);
-			if (trans_acc_name == username) {
-				acc_history.push_back(transaction_line);
+			std::size_t start = transaction_line.find(": ") + 2;
+			std::size_t end = transaction_line.find(',');
+			std::string trans_acc_name = transaction_line.substr(start, end - start);
+			
+			auto it = _accounts.find(trans_acc_name);
+			if (it != _accounts.end()) {
+				it->second->add_to_history(transaction_line);
 			}
 		}
-
-		// Read "present" from buffer
-		for (const std::string& transaction : _transaction_buffer) {
-			std::string trans_acc_name = transaction.substr(read_start_index, transaction.find(',') - read_start_index);
-			if (trans_acc_name == username) {
-				acc_history.push_back(transaction);
-			}
-		}
-
-		return acc_history;
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
-		return read_account_data();
+		auto all_acc_data = read_account_data();
+		// On bank load, we read all transactions and set the history for each account
+		get_acc_history();
+		return all_acc_data;
 	}
 
 	void Bank::save() {
@@ -177,6 +169,7 @@ namespace bank_system {
 	}
 
 	void Bank::log_transac(Account* acc, std::string type, double amount) {
+		if (!acc) return;
 		std::stringstream ss;
 		ss << "Account: " << acc->get_username() << ", ";
 		ss << type << " of ";
@@ -184,6 +177,7 @@ namespace bank_system {
 		ss << acc->get_balance();
 
 		_transaction_buffer.push_back(ss.str());
+		acc->add_to_history(ss.str());
 	}
 
 	Bank::~Bank() {

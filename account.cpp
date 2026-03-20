@@ -17,6 +17,10 @@ namespace bank_system {
 		_balance = new_balance;
 	}
 
+	void Account::add_to_history(const std::string& transaction) {
+		_history.push_back(transaction);
+	}
+
 	double Account::get_balance() const {
 		return _balance;
 	}
@@ -35,6 +39,10 @@ namespace bank_system {
 
 	int Account::get_age() const {
 		return _age;
+	}
+
+	std::vector<std::string> Account::get_history() const {
+		return _history;
 	}
 
 	bool Account::check_password(std::string password) const {
