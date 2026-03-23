@@ -12,6 +12,6 @@ struct TestTimer {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-		std::cout << "[TIMER] " << name << " took " << duration << " microseconds (" << duration / 1000.0 << " ms)" << std::endl;
+		std::cout << "[TIMER] " << duration << " microseconds (" << duration / 1000.0 << " ms)" << std::endl << std::endl;
 	}
 };
