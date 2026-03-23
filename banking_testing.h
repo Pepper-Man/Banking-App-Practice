@@ -2,6 +2,7 @@
 #include "bank.h"
 #include "constants.h"
 #include "data_handler.h"
+#include "junior_account.h"
 #include "savings_account.h"
 #include "simple_test.h"
 #include <cstdio>
@@ -338,6 +339,33 @@ TEST_CASE("Account type is preserved between bank save and load") {
     REQUIRE(base_standard->get_type() == bank_system::AccountType::Standard);
     REQUIRE(base_savings->get_type() == bank_system::AccountType::Savings);
     REQUIRE(base_junior->get_type() == bank_system::AccountType::Junior);
+}
+
+TEST_CASE("Account type-specific functions and values are available after save and load") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    // Create and save accounts of different types
+    {
+        bank_system::Bank bank;
+        bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr Savings", 20, 100.0, 0.0);
+        bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Mr Junior", 15, 0.0, 200.0);
+    }
+
+    bank_system::Bank new_bank;
+    bank_system::Account* base_savings = new_bank.login("savingsA", "pA");
+    bank_system::Account* base_junior = new_bank.login("juniorB", "pB");
+    REQUIRE(base_savings != nullptr);
+    REQUIRE(base_junior != nullptr);
+    bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_savings);
+    bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(base_junior);
+
+    REQUIRE(savings_acc != nullptr);
+    REQUIRE(junior_acc != nullptr);
+
+    // These getter functions are unique to their respective account child type
+    REQUIRE(savings_acc->get_withdraw_limit() == 100.0);
+    REQUIRE(junior_acc->get_balance_limit() == 200.0);
 }
 #endif
 

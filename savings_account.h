@@ -9,6 +9,9 @@ namespace bank_system {
 		SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double limit, bank_system::AccountType type);
 		SavingsAccount(std::string username, std::string password, std::string legal_name, int age, double balance, double limit, bank_system::AccountType type);
 		virtual bool withdraw(double amount);
+
+		// Getters
+		double get_withdraw_limit();
 	private:
 		double _withdraw_limit;
 	};

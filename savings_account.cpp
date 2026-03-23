@@ -20,4 +20,8 @@ namespace bank_system {
 		
 		return Account::withdraw(amount);
 	}
+
+	double SavingsAccount::get_withdraw_limit() {
+		return _withdraw_limit;
+	}
 }

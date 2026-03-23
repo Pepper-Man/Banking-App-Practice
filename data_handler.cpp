@@ -1,5 +1,8 @@
 #include "account.h"
+#include "constants.h"
 #include "data_handler.h"
+#include "junior_account.h"
+#include "savings_account.h"
 #include <fstream>
 #include <ios>
 #include <memory>
@@ -9,7 +12,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "constants.h"
 
 namespace bank_system {
 	void clear_saved_data() {
@@ -40,14 +42,33 @@ namespace bank_system {
 
 			// Now read parts and create acc
 			std::string username = acc_data[0];
-			std::unique_ptr<Account> acc = std::make_unique<Account>(
-				username, 
-				acc_data[1], // password hash
-				acc_data[2], // legal name
-				std::stoi(acc_data[3]), // age, converted to int
-				std::stod(acc_data[4]), // balance, converted to double
-				static_cast<bank_system::AccountType>(std::stoi(acc_data[5])) // account type, converted to int then converted to enum
-			);
+			std::string pass_hash = acc_data[1];
+			std::string legal_name = acc_data[2];
+			int age = std::stoi(acc_data[3]);
+			double balance = std::stod(acc_data[4]);
+			bank_system::AccountType type = static_cast<bank_system::AccountType>(std::stoi(acc_data[5])); // account type, converted to int then converted to enum
+			std::unique_ptr<Account> acc;
+
+			switch (type) {
+			// Extra braces to calm compiler about the var declaration
+			case bank_system::Savings:
+				{
+				double w_limit = std::stod(acc_data[6]);
+				acc = std::make_unique<SavingsAccount>(username, pass_hash, legal_name, age, balance, w_limit, bank_system::AccountType::Savings);
+				}
+				
+				break;
+			case bank_system::Junior:
+				{
+				double b_limit = std::stod(acc_data[6]);
+				acc = std::make_unique<JuniorAccount>(username, pass_hash, legal_name, age, balance, b_limit, bank_system::AccountType::Junior);
+				}
+				
+				break;
+
+			default:
+				acc = std::make_unique<Account>(username, pass_hash, legal_name, age, balance, bank_system::AccountType::Standard);
+			}
 
 			accounts.try_emplace(username, std::move(acc));
 		}
@@ -69,7 +90,31 @@ namespace bank_system {
 			data_file << acc->get_leg_name() << ",";
 			data_file << acc->get_age() << ",";
 			data_file << acc->get_balance() << ",";
-			data_file << acc->get_type();
+
+			// Handle extra account data
+			bank_system::AccountType type = acc->get_type();
+			data_file << type;
+
+			switch (type) {
+			// In these cases we cast to specific acc type so we can access its extra data
+			// Also it is wrapped in braces so the compiler doesnt get iffy about the variable declaration
+			case bank_system::AccountType::Savings:
+				{
+					auto* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(acc.get());
+					if (savings_acc) data_file << "," << savings_acc->get_withdraw_limit();
+				}
+				
+				break;
+			case bank_system::AccountType::Junior:
+				{
+					auto* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(acc.get());
+					if (junior_acc) data_file << "," << junior_acc->get_balance_limit();
+				}
+				break;
+			default:
+				break;
+			}
+
 			data_file << "\n";
 		}
 

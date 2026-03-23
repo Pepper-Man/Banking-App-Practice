@@ -9,7 +9,7 @@ namespace bank_system {
 		_balance_limit = b_limit;
 	}
 	JuniorAccount::JuniorAccount(std::string username, std::string password, std::string legal_name, int age, double balance, double b_limit, bank_system::AccountType type)
-		: Account(username, password, legal_name, age, type) {
+		: Account(username, password, legal_name, age, balance, type) {
 		_balance_limit = b_limit;
 	}
 
@@ -18,5 +18,9 @@ namespace bank_system {
 		if (get_balance() + amount > _balance_limit) return false;
 
 		return Account::deposit(amount);
+	}
+
+	double JuniorAccount::get_balance_limit() {
+		return _balance_limit;
 	}
 }
