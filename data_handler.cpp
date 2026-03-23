@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "constants.h"
 
 namespace bank_system {
 	void clear_saved_data() {
@@ -39,7 +40,14 @@ namespace bank_system {
 
 			// Now read parts and create acc
 			std::string username = acc_data[0];
-			std::unique_ptr<Account> acc = std::make_unique<Account>(username, acc_data[1], acc_data[2], std::stoi(acc_data[3]), std::stod(acc_data[4]));
+			std::unique_ptr<Account> acc = std::make_unique<Account>(
+				username, 
+				acc_data[1], // password hash
+				acc_data[2], // legal name
+				std::stoi(acc_data[3]), // age, converted to int
+				std::stod(acc_data[4]), // balance, converted to double
+				static_cast<bank_system::AccountType>(std::stoi(acc_data[5])) // account type, converted to int then converted to enum
+			);
 
 			accounts.try_emplace(username, std::move(acc));
 		}
@@ -60,7 +68,8 @@ namespace bank_system {
 			data_file << acc->get_psw_hash() << ",";
 			data_file << acc->get_leg_name() << ",";
 			data_file << acc->get_age() << ",";
-			data_file << acc->get_balance();
+			data_file << acc->get_balance() << ",";
+			data_file << acc->get_type();
 			data_file << "\n";
 		}
 

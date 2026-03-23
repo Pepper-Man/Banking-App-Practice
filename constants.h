@@ -1,6 +1,6 @@
 #pragma once
 namespace bank_system {
-	enum class AccountType {
+	enum AccountType {
 		Standard,
 		Savings,
 		Junior
