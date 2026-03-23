@@ -313,6 +313,32 @@ TEST_CASE("Junior account cannot exceed balance limit") {
     REQUIRE(bank.deposit_to_account("userA", 0.01) == false);
     REQUIRE(bank.withdraw_from_account("userA", 500.00) == true);
 }
+
+TEST_CASE("Account type is preserved between bank save and load") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    
+    // Create and save accounts of different types
+    {
+        bank_system::Bank bank;
+        bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr Standard", 30);
+        bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr Savings", 20);
+        bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Mr Junior", 15);
+    }
+
+    bank_system::Bank new_bank;
+    bank_system::Account* base_standard = new_bank.login("standardA", "pA");
+    bank_system::Account* base_savings = new_bank.login("savingsB", "pB");
+    bank_system::Account* base_junior = new_bank.login("juniorC", "pC");
+
+    REQUIRE(base_standard != nullptr);
+    REQUIRE(base_savings != nullptr);
+    REQUIRE(base_junior != nullptr);
+
+    REQUIRE(base_standard->get_type() == bank_system::AccountType::Standard);
+    REQUIRE(base_savings->get_type() == bank_system::AccountType::Savings);
+    REQUIRE(base_junior->get_type() == bank_system::AccountType::Junior);
+}
 #endif
 
 // More complex tests (~>10ms each)
