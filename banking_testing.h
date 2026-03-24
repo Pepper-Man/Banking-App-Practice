@@ -452,6 +452,26 @@ TEST_CASE("Bank total balance is correct") {
 
     REQUIRE(bank.get_total_bank_balance() == 75000050);
 }
+
+TEST_CASE("Bank can close accounts of all types") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
+    bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
+    bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 100.0);
+
+    // close_account returns true if successful
+    REQUIRE(bank.close_account("standard"));
+    REQUIRE(bank.close_account("savings"));
+    REQUIRE(bank.close_account("junior"));
+
+    // Shouldn't be able to log in to deleted accounts
+    REQUIRE(bank.login("standard", "pA") == nullptr);
+    REQUIRE(bank.login("savings", "pB") == nullptr);
+    REQUIRE(bank.login("junior", "pC") == nullptr);
+}
 #endif
 
 // More complex tests (~>10ms each)

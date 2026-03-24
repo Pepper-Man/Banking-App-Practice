@@ -23,6 +23,7 @@ namespace bank_system {
 		Account* login(std::string username, std::string password);
 		// Applies interest to all accounts
 		void apply_monthly_interest(double rate);
+		bool close_account(const std::string& username);
 		
 		// Admin/audit functions
 		std::vector<Account*> get_accounts_by_type(AccountType type) const;

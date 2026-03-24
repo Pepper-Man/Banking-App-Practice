@@ -90,6 +90,16 @@ namespace bank_system {
 		}
 	}
 
+	bool Bank::close_account(const std::string& username) {
+		auto it = _accounts.find(username);
+
+		if (it != _accounts.end()) {
+			_accounts.erase(it);
+			return true;
+		}
+		return false;
+	}
+
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
 		std::vector<Account*> found;
 
