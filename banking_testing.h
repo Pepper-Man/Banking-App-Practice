@@ -472,6 +472,36 @@ TEST_CASE("Bank can close accounts of all types") {
     REQUIRE(bank.login("savings", "pB") == nullptr);
     REQUIRE(bank.login("junior", "pC") == nullptr);
 }
+
+TEST_CASE("Bank applies correct interest amount to different account types") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create an account of each type
+    bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
+    bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
+    bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 300.0);
+    bank.deposit_to_account("standard", 100.0);
+    bank.deposit_to_account("savings", 100.0);
+    bank.deposit_to_account("junior", 100.0);
+
+    // Apply interest
+    bank.apply_monthly_interest(0.10); // 10% interest
+
+    // Log in to accounts
+    bank_system::Account* standard_acc = bank.login("standard", "pA");
+    bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(bank.login("savings", "pB"));
+    bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(bank.login("junior", "pC"));
+    REQUIRE(standard_acc != nullptr);
+    REQUIRE(savings_acc != nullptr);
+    REQUIRE(junior_acc != nullptr);
+
+    // Check balances
+    REQUIRE(standard_acc->get_balance() == 110.0);
+    REQUIRE(savings_acc->get_balance() == 120.0);
+    REQUIRE(junior_acc->get_balance() == 112.0);
+}
 #endif
 
 // More complex tests (~>10ms each)

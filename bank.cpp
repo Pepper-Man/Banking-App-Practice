@@ -62,9 +62,10 @@ namespace bank_system {
 				// Record old state before changing it
 				rollback_map[username] = acc->get_balance();
 
-				// Double interest for Savings accounts!
+				// Interest rate is modified per account type
 				double current_rate = rate;
-				if (acc->get_type() == bank_system::AccountType::Savings) current_rate *= 2.0;
+				if (acc->get_type() == AccountType::Savings) current_rate *= SavingsInterestMultiplier;
+				if (acc->get_type() == AccountType::Junior) current_rate *= JuniorInterestMultiplier;
 
 				// Apply interest and log
 				double interest = acc->get_balance() * current_rate;
