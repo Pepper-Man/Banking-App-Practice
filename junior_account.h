@@ -10,7 +10,7 @@ namespace bank_system {
 		virtual bool deposit(double amount);
 
 		// Getters
-		double get_balance_limit();
+		double get_balance_limit() const;
 	private:
 		double _balance_limit;
 	};

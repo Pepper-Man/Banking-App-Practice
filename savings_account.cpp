@@ -21,7 +21,7 @@ namespace bank_system {
 		return Account::withdraw(amount);
 	}
 
-	double SavingsAccount::get_withdraw_limit() {
+	double SavingsAccount::get_withdraw_limit() const {
 		return _withdraw_limit;
 	}
 }

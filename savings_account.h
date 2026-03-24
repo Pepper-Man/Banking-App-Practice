@@ -11,7 +11,7 @@ namespace bank_system {
 		virtual bool withdraw(double amount);
 
 		// Getters
-		double get_withdraw_limit();
+		double get_withdraw_limit() const;
 	private:
 		double _withdraw_limit;
 	};

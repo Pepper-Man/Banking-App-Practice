@@ -103,6 +103,26 @@ namespace bank_system {
 		return found;
 	}
 
+	std::vector<JuniorAccount*> Bank::get_at_risk_juniors(double tolerance) const {
+		std::vector<JuniorAccount*> found;
+		std::vector<Account*> all_j_accounts = get_accounts_by_type(AccountType::Junior);
+
+		for (const auto& acc : all_j_accounts) {
+			JuniorAccount* j_acc = dynamic_cast<JuniorAccount*>(acc);
+
+			if (j_acc) { // Make sure dynamic cast worked
+				double balance = j_acc->get_balance();
+				double balance_limit = j_acc->get_balance_limit();
+
+				if (balance_limit - balance <= tolerance) {
+					found.push_back(j_acc);
+				}
+			}
+		}
+
+		return found;
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}

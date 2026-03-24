@@ -393,6 +393,26 @@ TEST_CASE("Bank audit function to return accounts by type works correctly") {
     REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Savings).size() == 3);
     REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Junior).size() == 4);
 }
+
+TEST_CASE("Bank audit function to check at-risk junior accounts works correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create two not-at-risk juniors
+    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13, 0.0, 100.0);
+    bank.deposit_to_account("juniorA", 50.00);
+    bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14, 0.0, 150.0);
+    bank.deposit_to_account("juniorB", 100.00);
+
+    // Create two at-risk juniors
+    bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15, 0.0, 100.0);
+    bank.deposit_to_account("juniorC", 95.00);
+    bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16, 0.0, 150.0);
+    bank.deposit_to_account("juniorD", 140.10);
+
+    REQUIRE(bank.get_at_risk_juniors(10.00).size() == 2);
+}
 #endif
 
 // More complex tests (~>10ms each)

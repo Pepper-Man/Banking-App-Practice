@@ -20,7 +20,7 @@ namespace bank_system {
 		return Account::deposit(amount);
 	}
 
-	double JuniorAccount::get_balance_limit() {
+	double JuniorAccount::get_balance_limit() const {
 		return _balance_limit;
 	}
 }

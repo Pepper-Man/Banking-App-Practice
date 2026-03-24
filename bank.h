@@ -8,6 +8,8 @@
 #include <vector>
 
 namespace bank_system {
+	class JuniorAccount;
+
 	class Bank {
 	public:
 		// Immediately load saved account data
@@ -21,8 +23,9 @@ namespace bank_system {
 		// Applies interest to all accounts
 		void apply_monthly_interest(double rate);
 		
-		// Admin functions
+		// Admin/audit functions
 		std::vector<Account*> get_accounts_by_type(AccountType type) const;
+		std::vector<JuniorAccount*> get_at_risk_juniors(double tolerance) const; // "At risk" is defined as being within the tolerance value of the balance limit
 
 		// Account-level functions
 		bool user_exists(const std::string& username) const;
