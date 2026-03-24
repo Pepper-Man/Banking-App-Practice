@@ -123,6 +123,21 @@ namespace bank_system {
 		return found;
 	}
 
+	std::pair<std::string, double> Bank::get_highest_balance_holder() const {
+		std::string top_user = "None";
+		double max_balance = -1.0;
+
+		for (const auto& [username, acc] : _accounts) {
+			double current_balance = acc->get_balance();
+			if (current_balance > max_balance) {
+				max_balance = current_balance;
+				top_user = username;
+			}
+		}
+
+		return { top_user, max_balance };
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}

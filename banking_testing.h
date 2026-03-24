@@ -413,6 +413,23 @@ TEST_CASE("Bank audit function to check at-risk junior accounts works correctly"
 
     REQUIRE(bank.get_at_risk_juniors(10.00).size() == 2);
 }
+
+TEST_CASE("Bank audit function to find highest value user") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create some users
+    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    bank.deposit_to_account("userA", 15000000.00);
+    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
+    bank.deposit_to_account("userB", 20000000.00);
+    bank.create_account(bank_system::AccountType::Standard, "userC", "pC", "Mr C", 32);
+    bank.deposit_to_account("userC", 5000000.00);
+
+    REQUIRE(bank.get_highest_balance_holder().first == "userB");
+    REQUIRE(bank.get_highest_balance_holder().second == 20000000.00);
+}
 #endif
 
 // More complex tests (~>10ms each)
