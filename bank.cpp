@@ -12,9 +12,13 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <cctype>
+#include <vector>
 
 namespace bank_system {
 	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit, double b_limit) {
+		if (!is_valid_acc_name(user)) return false; // Check that username is allowed
+
 		if (_accounts.find(user) != _accounts.end()) return false; // Account already exists!
 
 		std::unique_ptr<Account> new_acc;
@@ -99,6 +103,17 @@ namespace bank_system {
 			return true;
 		}
 		return false;
+	}
+
+	bool Bank::is_valid_acc_name(const std::string& name) {
+		// No empty usernames!
+		if (name.empty()) return false;
+
+		// Only allow alphanumerical characters in usernames
+		for (const char& c : name) {
+			if (!std::isalnum(static_cast<unsigned char>(c))) return false;
+		}
+		return true;
 	}
 
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
@@ -239,7 +254,7 @@ namespace bank_system {
 		}
 	}
 
-	void Bank::get_acc_history() {
+	void Bank::get_all_acc_history() {
 		// Read past from file
 		std::ifstream transac_file("transactions.log");
 		std::string transaction_line;
@@ -260,7 +275,7 @@ namespace bank_system {
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
 		auto all_acc_data = read_account_data();
 		// On bank load, we read all transactions and set the history for each account
-		get_acc_history();
+		get_all_acc_history();
 		return all_acc_data;
 	}
 

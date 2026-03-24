@@ -502,6 +502,21 @@ TEST_CASE("Bank applies correct interest amount to different account types") {
     REQUIRE(savings_acc->get_balance() == 120.0);
     REQUIRE(junior_acc->get_balance() == 112.0);
 }
+
+TEST_CASE("Account usernames are correctly validated") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username123TEST", "pA", "Mr Test", 30) == true);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user,name", "pA", "Mr Test", 30) == false);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user name", "pA", "Mr Test", 30) == false);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, " username", "pA", "Mr Test", 30) == false);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username ", "pA", "Mr Test", 30) == false);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "us3rn4m3", "pA", "Mr Test", 30) == true);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username!", "pA", "Mr Test", 30) == false);
+    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "USERNAME", "pA", "Mr Test", 30) == true);
+}
 #endif
 
 // More complex tests (~>10ms each)
