@@ -90,6 +90,19 @@ namespace bank_system {
 		}
 	}
 
+	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
+		std::vector<Account*> found;
+
+		for (const auto& [username, acc] : _accounts) {
+			if (acc->get_type() == type) {
+				// acc.get() gets the raw ptr from the unique ptr
+				found.push_back(acc.get());
+			}
+		}
+
+		return found;
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}

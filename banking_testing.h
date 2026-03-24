@@ -367,6 +367,32 @@ TEST_CASE("Account type-specific functions and values are available after save a
     REQUIRE(savings_acc->get_withdraw_limit() == 100.0);
     REQUIRE(junior_acc->get_balance_limit() == 200.0);
 }
+
+TEST_CASE("Bank audit function to return accounts by type works correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create two standard accounts
+    bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr StandardA", 30);
+    bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr StandardB", 35);
+
+    // Create three savings accounts
+    bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr SavingsA", 25, 100.0, 0.0);
+    bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr SavingsB", 26, 110.0, 0.0);
+    bank.create_account(bank_system::AccountType::Savings, "savingsC", "pC", "Mr SavingsC", 27, 120.0, 0.0);
+
+    // Create four junior accounts
+    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13);
+    bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14);
+    bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15);
+    bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16);
+
+    // Test vector sizes, should be same as amount of accounts of type
+    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Standard).size() == 2);
+    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Savings).size() == 3);
+    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Junior).size() == 4);
+}
 #endif
 
 // More complex tests (~>10ms each)
@@ -499,8 +525,6 @@ void get_going() {
     std::cout << "Press Enter to exit tests..." << std::endl;
     std::cin.get();
 #else
-    // Actual Banking App Interface
     bank_system::bank_ui();
-    // ... your UI logic here ...
 #endif
 }

@@ -20,6 +20,9 @@ namespace bank_system {
 		Account* login(std::string username, std::string password);
 		// Applies interest to all accounts
 		void apply_monthly_interest(double rate);
+		
+		// Admin functions
+		std::vector<Account*> get_accounts_by_type(AccountType type) const;
 
 		// Account-level functions
 		bool user_exists(const std::string& username) const;
