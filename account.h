@@ -19,9 +19,11 @@ namespace bank_system {
 		int get_age() const;
 		std::vector<std::string> get_history() const;
 		bank_system::AccountType get_type() const;
+		bool get_flagged() const;
 
 		// Setters
 		void set_balance(double new_balance);
+		void set_flagged(bool val);
 		
 		// Other
 		bool check_password(std::string password) const;
@@ -41,6 +43,7 @@ namespace bank_system {
 		int _age;
 		std::vector<std::string> _history;
 		bank_system::AccountType _type;
+		bool _flagged = false;
 	};
 
 	void bank_ui();

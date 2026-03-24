@@ -53,12 +53,20 @@ namespace bank_system {
 		return _type;
 	}
 
+	bool Account::get_flagged() const {
+		return _flagged;
+	}
+
+	void Account::set_flagged(bool val) {
+		_flagged = val;
+	}
+
 	bool Account::check_password(std::string password) const {
 		return psw_hash(password) == _password_hash;
 	}
 
 	bool Account::deposit(double amount) {
-		if (amount > 0) {
+		if (amount > 0 && !_flagged) {
 			_balance += amount;
 			return true;
 		}
@@ -66,7 +74,7 @@ namespace bank_system {
 	}
 
 	bool Account::withdraw(double amount) {
-		if (amount > 0 && amount <= _balance) {
+		if (amount > 0 && amount <= _balance && !_flagged) {
 			_balance -= amount;
 			
 			return true;

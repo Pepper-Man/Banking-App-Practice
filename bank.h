@@ -31,6 +31,8 @@ namespace bank_system {
 		std::vector<JuniorAccount*> get_at_risk_juniors(double tolerance) const; // "At risk" is defined as being within the tolerance value of the balance limit
 		std::pair<std::string, double> get_highest_balance_holder() const;
 		double get_total_bank_balance() const;
+		bool flag_account(const std::string& username); // Returns success, not value
+		bool unflag_account(const std::string& username); // Returns success, not value
 
 		// Account-level functions
 		bool user_exists(const std::string& username) const;

@@ -517,6 +517,32 @@ TEST_CASE("Account usernames are correctly validated") {
     REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username!", "pA", "Mr Test", 30) == false);
     REQUIRE(bank.create_account(bank_system::AccountType::Standard, "USERNAME", "pA", "Mr Test", 30) == true);
 }
+
+TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create two accounts
+    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    bank.deposit_to_account("userA", 1000.0);
+    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
+    bank.deposit_to_account("userB", 250.0);
+    bank_system::Account* accA = bank.login("userA", "pA");
+
+    // Flag account A
+    bank.flag_account("userA");
+    
+    REQUIRE(accA->deposit(250.0) == false);
+    REQUIRE(accA->withdraw(500.0) == false);
+    REQUIRE(bank.transfer("userA", "userB", 500.0) == false);
+
+    // Unflag account A
+    bank.unflag_account("userA");
+    REQUIRE(accA->deposit(250.0) == true);
+    REQUIRE(accA->withdraw(500.0) == true);
+    REQUIRE(bank.transfer("userA", "userB", 500.0) == true);
+}
 #endif
 
 // More complex tests (~>10ms each)

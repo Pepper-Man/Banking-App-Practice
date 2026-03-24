@@ -174,6 +174,22 @@ namespace bank_system {
 		return total;
 	}
 
+	bool Bank::flag_account(const std::string& username) {
+		auto it = _accounts.find(username);
+		if (it != _accounts.end()) {
+			it->second->set_flagged(true);
+		}
+		return false;
+	}
+
+	bool Bank::unflag_account(const std::string& username) {
+		auto it = _accounts.find(username);
+		if (it != _accounts.end()) {
+			it->second->set_flagged(false);
+		}
+		return false;
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}
@@ -225,6 +241,9 @@ namespace bank_system {
 		auto from_it = _accounts.find(from_user);
 		auto to_it = _accounts.find(to_user);
 		if (from_it == _accounts.end() || to_it == _accounts.end()) return false;
+
+		// If either account is flagged, do not allow transfer
+		if (from_it->second->get_flagged() || to_it->second->get_flagged()) return false;
 
 		// Create backups
 		double from_balance_backup = from_it->second->get_balance();
