@@ -138,6 +138,16 @@ namespace bank_system {
 		return { top_user, max_balance };
 	}
 
+	double Bank::get_total_bank_balance() const {
+		double total = 0.0;
+
+		for (const auto& [username, acc] : _accounts) {
+			total += acc->get_balance();
+		}
+
+		return total;
+	}
+
 	bool Bank::user_exists(const std::string& username) const {
 		return _accounts.contains(username);
 	}

@@ -430,6 +430,28 @@ TEST_CASE("Bank audit function to find highest value user") {
     REQUIRE(bank.get_highest_balance_holder().first == "userB");
     REQUIRE(bank.get_highest_balance_holder().second == 20000000.00);
 }
+
+TEST_CASE("Bank total balance is correct") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    // Create some users
+    bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr A", 30);
+    bank.deposit_to_account("standardA", 15000000.00);
+    bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr B", 31);
+    bank.deposit_to_account("standardB", 20000000.00);
+    bank.create_account(bank_system::AccountType::Standard, "standardC", "pC", "Mr C", 32);
+    bank.deposit_to_account("standardC", 5000000.00);
+    bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr A", 30, 100.0, 0.0);
+    bank.deposit_to_account("savingsA", 15000000.00);
+    bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr B", 31, 100.0, 0.0);
+    bank.deposit_to_account("savingsB", 20000000.00);
+    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master C", 15, 0.0, 100.0);
+    bank.deposit_to_account("juniorA", 50.00);
+
+    REQUIRE(bank.get_total_bank_balance() == 75000050);
+}
 #endif
 
 // More complex tests (~>10ms each)
@@ -552,6 +574,26 @@ TEST_CASE("Bank returns account history correctly from saved file and large amou
     REQUIRE(acc500->get_history().size() == 2);
     bank.deposit_to_account("user500", 12.00);
     REQUIRE(acc500->get_history().size() == 3);
+}
+
+TEST_CASE("Bank total is correct with thousands of accounts, between saves and loads") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    int num_accounts = 2000;
+
+    {
+        bank_system::Bank bank;
+        for (int i = 0; i < num_accounts; i++) {
+            std::string user = "user" + std::to_string(i);
+            bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
+            bank.deposit_to_account(user, 100.00);
+            bank.withdraw_from_account(user, 10.00);
+        }
+    }
+
+    bank_system::Bank new_bank;
+    REQUIRE(new_bank.get_total_bank_balance() == 90 * num_accounts);
 }
 
 #endif
