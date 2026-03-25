@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 // Comment these out to disable certain tests
 #define RUN_QUICK_TESTS
@@ -542,6 +543,48 @@ TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") 
     REQUIRE(accA->deposit(250.0) == true);
     REQUIRE(accA->withdraw(500.0) == true);
     REQUIRE(bank.transfer("userA", "userB", 500.0) == true);
+}
+
+TEST_CASE("Account can return balance in other currencies") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    bank.deposit_to_account("userA", 100.00); // In GBP
+    bank_system::Account* acc = bank.login("userA", "pA");
+
+    // 1 penny margin
+    double tolerance = 0.01;
+
+    // GBP
+    double result = acc->get_balance_in_currency(bank_system::Currency::GBP);
+    double expected = 100.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
+
+    //USD
+    result = acc->get_balance_in_currency(bank_system::Currency::USD);
+    expected = 134.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
+
+    //EUR
+    result = acc->get_balance_in_currency(bank_system::Currency::EUR);
+    expected = 116.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
+
+    //JPY
+    result = acc->get_balance_in_currency(bank_system::Currency::JPY);
+    expected = 21273.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
+
+    //AUD
+    result = acc->get_balance_in_currency(bank_system::Currency::AUD);
+    expected = 192.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
+
+    //CAD
+    result = acc->get_balance_in_currency(bank_system::Currency::CAD);
+    expected = 185.00;
+    REQUIRE(std::abs(result - expected) < tolerance);
 }
 #endif
 

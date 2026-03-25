@@ -1,9 +1,29 @@
 #pragma once
+#include <unordered_map>
+
 namespace bank_system {
 	enum AccountType {
 		Standard,
 		Savings,
 		Junior
+	};
+
+	enum Currency {
+		GBP,
+		USD,
+		EUR,
+		JPY,
+		AUD,
+		CAD
+	};
+
+	inline const std::unordered_map<Currency, double> exchange_rates{
+		{ GBP, 1.00 },
+		{ USD, 1.34 },
+		{ EUR, 1.16 },
+		{ JPY, 212.73 },
+		{ AUD, 1.92 },
+		{ CAD, 1.85 }
 	};
 
 	// Double interest for Savings accounts, 1.2x interest for Junior accounts

@@ -29,6 +29,10 @@ namespace bank_system {
 		return _balance;
 	}
 
+	double Account::get_balance_in_currency(bank_system::Currency currency) const {
+		return _balance * bank_system::exchange_rates.at(currency);
+	}
+
 	std::string Account::get_username() const {
 		return _username;
 	}
