@@ -194,30 +194,32 @@ namespace bank_system {
 		return _accounts.contains(username);
 	}
 
-	bool Bank::deposit_to_account(const std::string& username, double amount) {
+	TransactionStatus Bank::deposit_to_account(const std::string& username, double amount) {
 		auto it = _accounts.find(username);
 		if (it != _accounts.end()) {
 			// Only log transaction if it is successful/allowed
-			if (it->second->deposit(amount)) {
+			TransactionStatus status = it->second->deposit(amount);
+			if (status == TransactionStatus::Success) {
 				log_transac(it->second.get(), "Deposit", amount); // Record the event
-				return true;
+				return TransactionStatus::Success;
 			}
+			return status;
 		}
-		return false;
+		return TransactionStatus::UnknownAccount;
 	}
 
-	bool Bank::withdraw_from_account(const std::string& username, double amount) {
+	TransactionStatus Bank::withdraw_from_account(const std::string& username, double amount) {
 		auto it = _accounts.find(username);
 		if (it != _accounts.end()) {
 			// Only log transaction if it is successful/allowed
-			bool success = it->second->withdraw(amount);
-
-			if (success) {
+			TransactionStatus status = it->second->withdraw(amount);
+			if (status == TransactionStatus::Success) {
 				log_transac(it->second.get(), "Withdrawal", amount);
-				return true;
+				return TransactionStatus::Success;
 			}
+			return status;
 		}
-		return false;
+		return TransactionStatus::UnknownAccount;
 	}
 
 	bool Bank::request_password_change(const std::string& user, const std::string& old_p, const std::string& new_p) {
@@ -233,44 +235,44 @@ namespace bank_system {
 		return false;
 	}
 
-	bool Bank::transfer(const std::string& from_user, const std::string& to_user, double amount) {
+	TransactionStatus Bank::transfer(const std::string& from_user, const std::string& to_user, double amount) {
 		// Can't transfer between same account
-		if (from_user == to_user) return false;
+		if (from_user == to_user) return TransactionStatus::SameAccount;
 
 		// Verify both accounts exist, exit early if not
 		auto from_it = _accounts.find(from_user);
 		auto to_it = _accounts.find(to_user);
-		if (from_it == _accounts.end() || to_it == _accounts.end()) return false;
+		if (from_it == _accounts.end() || to_it == _accounts.end()) return TransactionStatus::UnknownAccount;
 
 		// If either account is flagged, do not allow transfer
-		if (from_it->second->get_flagged() || to_it->second->get_flagged()) return false;
+		if (from_it->second->get_flagged() || to_it->second->get_flagged()) return TransactionStatus::AccountLocked;
 
 		// Create backups
 		double from_balance_backup = from_it->second->get_balance();
 		double to_balance_backup = to_it->second->get_balance();
 
 		// Ensure from acc has enough funds
-		if (amount > from_balance_backup) throw std::invalid_argument("Insufficient funds for transfer!");
+		if (amount > from_balance_backup) return TransactionStatus::InsufficientFunds;
 
-		// Try perform transaction, catch ANY exception
-		try {
-			// Mutate objects directly, no logging
-			from_it->second->withdraw(amount);
-			to_it->second->deposit(amount);
+		// Try to withdraw
+		TransactionStatus withdraw_result = from_it->second->withdraw(amount);
+		if (withdraw_result != TransactionStatus::Success) return withdraw_result;
 
-			// Log only once both operations are successful
-			log_transac(from_it->second.get(), "Transfer Out", amount);
-			log_transac(to_it->second.get(), "Transfer In", amount);
-
-			return true;
-		}
-		catch (const std::exception& e) {
-			// Revert balances
+		// Try to deposit
+		TransactionStatus deposit_result = to_it->second->deposit(amount);
+		
+		// Check for failure, revert to backup if necessary
+		if (deposit_result != TransactionStatus::Success) {
 			from_it->second->set_balance(from_balance_backup);
 			to_it->second->set_balance(to_balance_backup);
-
-			throw std::runtime_error("Transfer failed! Data rolled back. Error: " + std::string(e.what()));
+			return deposit_result;
 		}
+
+		// Both succeeded, now log
+		log_transac(from_it->second.get(), "Transfer Out", amount);
+		log_transac(to_it->second.get(), "Transfer In", amount);
+
+		return TransactionStatus::Success;
 	}
 
 	void Bank::get_all_acc_history() {

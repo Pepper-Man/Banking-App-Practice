@@ -17,6 +17,16 @@ namespace bank_system {
 		CAD
 	};
 
+	enum class TransactionStatus {
+		Success,
+		InsufficientFunds,
+		ExceedsLimit,
+		AccountLocked,
+		InvalidAmount,
+		UnknownAccount,
+		SameAccount
+	};
+
 	inline const std::unordered_map<Currency, double> exchange_rates{
 		{ GBP, 1.00 },
 		{ USD, 1.34 },

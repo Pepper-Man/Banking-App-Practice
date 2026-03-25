@@ -69,21 +69,26 @@ namespace bank_system {
 		return psw_hash(password) == _password_hash;
 	}
 
-	bool Account::deposit(double amount) {
-		if (amount > 0 && !_flagged) {
+	TransactionStatus Account::deposit(double amount) {
+		if (_flagged) return TransactionStatus::AccountLocked;
+
+		if (amount > 0) {
 			_balance += amount;
-			return true;
+			return TransactionStatus::Success;
 		}
-		return false;
+		return TransactionStatus::InvalidAmount;
 	}
 
-	bool Account::withdraw(double amount) {
-		if (amount > 0 && amount <= _balance && !_flagged) {
+	TransactionStatus Account::withdraw(double amount) {
+		if (_flagged) return TransactionStatus::AccountLocked;
+		if (amount <= 0) return TransactionStatus::InvalidAmount;
+
+		if (amount <= _balance) {
 			_balance -= amount;
 			
-			return true;
+			return TransactionStatus::Success;
 		}
-		return false;
+		return TransactionStatus::InsufficientFunds;
 	}
 
 	bool Account::change_password(const std::string& old_password, const std::string& new_password) {

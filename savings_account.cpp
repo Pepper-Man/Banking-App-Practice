@@ -15,8 +15,8 @@ namespace bank_system {
 	}
 
 	// Savings accounts have a limit on the maximum withdrawal
-	bool SavingsAccount::withdraw(double amount) {
-		if (amount > _withdraw_limit) return false;
+	TransactionStatus SavingsAccount::withdraw(double amount) {
+		if (amount > _withdraw_limit) return TransactionStatus::ExceedsLimit;
 		
 		return Account::withdraw(amount);
 	}

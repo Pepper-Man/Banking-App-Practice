@@ -35,8 +35,7 @@ TEST_CASE("Account prevents negative deposit") {
 TEST_CASE("Account prevents over-withdrawal") {
     bank_system::Account acc("user", "pass", "Name", 25);
     acc.deposit(50.0);
-    bool success = acc.withdraw(60.0);
-    REQUIRE(success == false);
+    REQUIRE(acc.withdraw(60.0) == bank_system::TransactionStatus::InsufficientFunds);
     REQUIRE(acc.get_balance() == 50.0);
 }
 
@@ -165,8 +164,8 @@ TEST_CASE("User cannot withdraw more than balance") {
     bank_system::Bank bank;
     bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 29);
     bank.deposit_to_account("userA", 200.00);
-    REQUIRE(bank.withdraw_from_account("userA", 200.01) == false);
-    REQUIRE(bank.withdraw_from_account("userA", 200.00) == true);
+    REQUIRE(bank.withdraw_from_account("userA", 200.01) == bank_system::TransactionStatus::InsufficientFunds);
+    REQUIRE(bank.withdraw_from_account("userA", 200.00) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("User cannot deposit zero or negative amount") {
@@ -174,13 +173,13 @@ TEST_CASE("User cannot deposit zero or negative amount") {
     bank_system::clear_transac_data();
     bank_system::Bank bank;
     bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
-    REQUIRE(bank.deposit_to_account("userA", 0) == false);
-    REQUIRE(bank.deposit_to_account("userA", 0.00) == false);
-    REQUIRE(bank.deposit_to_account("userA", 0.01) == true);
-    REQUIRE(bank.deposit_to_account("userA", -200.00) == false);
-    REQUIRE(bank.deposit_to_account("userA", -0) == false);
-    REQUIRE(bank.deposit_to_account("userA", 10.00) == true);
-    REQUIRE(bank.deposit_to_account("userA", -0.00) == false);
+    REQUIRE(bank.deposit_to_account("userA", 0) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(bank.deposit_to_account("userA", 0.00) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::Success);
+    REQUIRE(bank.deposit_to_account("userA", -200.00) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(bank.deposit_to_account("userA", -0) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(bank.deposit_to_account("userA", -0.00) == bank_system::TransactionStatus::InvalidAmount);
 }
 
 TEST_CASE("User can change password, then log in with new password") {
@@ -251,15 +250,9 @@ TEST_CASE("Invalid transfer should fail") {
     bank.deposit_to_account(userA, accA_start_amount);
     bank.deposit_to_account(userB, accB_start_amount);
 
-    // Transfer should throw
+    // Transfer should fail
     bool caught_exception = false;
-    try {
-        bank.transfer(userA, userB, accA_start_amount * 2.0); // Too much!
-    }
-    catch (const std::exception& e) {
-        caught_exception = true;
-    }
-    REQUIRE(caught_exception == true);
+    REQUIRE(bank.transfer(userA, userB, accA_start_amount * 2.0) == bank_system::TransactionStatus::InsufficientFunds); // Too much!
 
     // Check that account values have not been altered
     bank_system::Account* accA = bank.login(userA, "pA");
@@ -296,11 +289,11 @@ TEST_CASE("Savings account withdraw limit works correctly") {
     bank_system::Bank bank;
     bank.create_account(bank_system::AccountType::Savings, "userA", "pA", "Mr A", 25, withdraw_limit);
     bank.deposit_to_account("userA", 100.0);
-    REQUIRE(bank.withdraw_from_account("userA", 500.0) == false);
+    REQUIRE(bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsLimit);
     bank_system::Account* base_acc = bank.login("userA", "pA");
     bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_acc);
     REQUIRE(savings_acc->get_balance() == 100.0);
-    REQUIRE(savings_acc->withdraw(101.0) == false);
+    REQUIRE(savings_acc->withdraw(101.0) == bank_system::TransactionStatus::ExceedsLimit);
 }
 
 TEST_CASE("Junior account cannot exceed balance limit") {
@@ -309,11 +302,11 @@ TEST_CASE("Junior account cannot exceed balance limit") {
     bank_system::clear_transac_data();
     bank_system::Bank bank;
     bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
-    REQUIRE(bank.deposit_to_account("userA", 499.00) == true);
-    REQUIRE(bank.deposit_to_account("userA", 1.00) == true);
-    REQUIRE(bank.deposit_to_account("userA", 10.00) == false);
-    REQUIRE(bank.deposit_to_account("userA", 0.01) == false);
-    REQUIRE(bank.withdraw_from_account("userA", 500.00) == true);
+    REQUIRE(bank.deposit_to_account("userA", 499.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(bank.deposit_to_account("userA", 1.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::ExceedsLimit);
+    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::ExceedsLimit);
+    REQUIRE(bank.withdraw_from_account("userA", 500.00) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("Account type is preserved between bank save and load") {
@@ -534,15 +527,15 @@ TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") 
     // Flag account A
     bank.flag_account("userA");
     
-    REQUIRE(accA->deposit(250.0) == false);
-    REQUIRE(accA->withdraw(500.0) == false);
-    REQUIRE(bank.transfer("userA", "userB", 500.0) == false);
+    REQUIRE(accA->deposit(250.0) == bank_system::TransactionStatus::AccountLocked);
+    REQUIRE(accA->withdraw(500.0) == bank_system::TransactionStatus::AccountLocked);
+    REQUIRE(bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::AccountLocked);
 
     // Unflag account A
     bank.unflag_account("userA");
-    REQUIRE(accA->deposit(250.0) == true);
-    REQUIRE(accA->withdraw(500.0) == true);
-    REQUIRE(bank.transfer("userA", "userB", 500.0) == true);
+    REQUIRE(accA->deposit(250.0) == bank_system::TransactionStatus::Success);
+    REQUIRE(accA->withdraw(500.0) == bank_system::TransactionStatus::Success);
+    REQUIRE(bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("Account can return balance in other currencies") {
