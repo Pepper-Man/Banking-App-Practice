@@ -20,7 +20,8 @@ namespace bank_system {
 	enum class TransactionStatus {
 		Success,
 		InsufficientFunds,
-		ExceedsLimit,
+		ExceedsAccountLimit,
+		ExceedsBankLimit,
 		AccountLocked,
 		InvalidAmount,
 		UnknownAccount,
@@ -39,4 +40,8 @@ namespace bank_system {
 	// Double interest for Savings accounts, 1.2x interest for Junior accounts
 	inline constexpr double SavingsInterestMultiplier = 2.0;
 	inline constexpr double JuniorInterestMultiplier = 1.2;
+
+	// Transaction fees + limits
+	inline constexpr double TransferFee = 0.50;
+	inline constexpr double TransferLimit = 5000.00;
 }

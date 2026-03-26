@@ -15,7 +15,7 @@ namespace bank_system {
 
 	// Junior accounts limited by maximum balance
 	TransactionStatus JuniorAccount::deposit(double amount) {
-		if (get_balance() + amount > _balance_limit) return TransactionStatus::ExceedsLimit;
+		if (get_balance() + amount > _balance_limit) return TransactionStatus::ExceedsAccountLimit;
 
 		return Account::deposit(amount);
 	}

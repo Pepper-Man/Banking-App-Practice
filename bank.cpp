@@ -236,6 +236,9 @@ namespace bank_system {
 	}
 
 	TransactionStatus Bank::transfer(const std::string& from_user, const std::string& to_user, double amount) {
+		// Can't transfer more than bank's current transfer limit
+		if (amount > bank_system::TransferLimit) return TransactionStatus::ExceedsBankLimit;
+
 		// Can't transfer between same account
 		if (from_user == to_user) return TransactionStatus::SameAccount;
 
@@ -251,11 +254,14 @@ namespace bank_system {
 		double from_balance_backup = from_it->second->get_balance();
 		double to_balance_backup = to_it->second->get_balance();
 
+		// Transaction fee is added to withdrawal amount
+		double withdraw_amount = amount + bank_system::TransferFee;
+
 		// Ensure from acc has enough funds
-		if (amount > from_balance_backup) return TransactionStatus::InsufficientFunds;
+		if (withdraw_amount > from_balance_backup) return TransactionStatus::InsufficientFunds;
 
 		// Try to withdraw
-		TransactionStatus withdraw_result = from_it->second->withdraw(amount);
+		TransactionStatus withdraw_result = from_it->second->withdraw(withdraw_amount);
 		if (withdraw_result != TransactionStatus::Success) return withdraw_result;
 
 		// Try to deposit
@@ -269,7 +275,7 @@ namespace bank_system {
 		}
 
 		// Both succeeded, now log
-		log_transac(from_it->second.get(), "Transfer Out", amount);
+		log_transac(from_it->second.get(), "Transfer Out", withdraw_amount);
 		log_transac(to_it->second.get(), "Transfer In", amount);
 
 		return TransactionStatus::Success;

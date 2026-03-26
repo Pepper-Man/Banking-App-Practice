@@ -206,7 +206,7 @@ TEST_CASE("Bank can transfer amounts between accounts successfully") {
     std::string userB = "userB";
     double accA_start_amount = 100.0;
     double accB_start_amount = 100.0;
-    double expected_total = accA_start_amount + accB_start_amount;
+    double expected_total = accA_start_amount + accB_start_amount - bank_system::TransferFee;
 
     // Set up bank and accounts
     bank_system::clear_saved_data();
@@ -289,11 +289,11 @@ TEST_CASE("Savings account withdraw limit works correctly") {
     bank_system::Bank bank;
     bank.create_account(bank_system::AccountType::Savings, "userA", "pA", "Mr A", 25, withdraw_limit);
     bank.deposit_to_account("userA", 100.0);
-    REQUIRE(bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsLimit);
+    REQUIRE(bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
     bank_system::Account* base_acc = bank.login("userA", "pA");
     bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_acc);
     REQUIRE(savings_acc->get_balance() == 100.0);
-    REQUIRE(savings_acc->withdraw(101.0) == bank_system::TransactionStatus::ExceedsLimit);
+    REQUIRE(savings_acc->withdraw(101.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
 }
 
 TEST_CASE("Junior account cannot exceed balance limit") {
@@ -304,8 +304,8 @@ TEST_CASE("Junior account cannot exceed balance limit") {
     bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
     REQUIRE(bank.deposit_to_account("userA", 499.00) == bank_system::TransactionStatus::Success);
     REQUIRE(bank.deposit_to_account("userA", 1.00) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::ExceedsLimit);
-    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::ExceedsLimit);
+    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::ExceedsAccountLimit);
+    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::ExceedsAccountLimit);
     REQUIRE(bank.withdraw_from_account("userA", 500.00) == bank_system::TransactionStatus::Success);
 }
 
@@ -578,6 +578,31 @@ TEST_CASE("Account can return balance in other currencies") {
     result = acc->get_balance_in_currency(bank_system::Currency::CAD);
     expected = 185.00;
     REQUIRE(std::abs(result - expected) < tolerance);
+}
+
+TEST_CASE("Transfer fees and limits are applied correctly") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+    bank_system::Bank bank;
+
+    double userAStartingCash = 10000.00;
+    double userBStartingCash = 1000.00;
+
+    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    bank.deposit_to_account("userA", userAStartingCash);
+    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 40);
+    bank.deposit_to_account("userB", userBStartingCash);
+
+    // Should fail as its over the transfer limit
+    REQUIRE(bank.transfer("userA", "userB", bank_system::TransferLimit + 0.01) == bank_system::TransactionStatus::ExceedsBankLimit);
+
+    // Should succeed
+    REQUIRE(bank.transfer("userA", "userB", bank_system::TransferLimit) == bank_system::TransactionStatus::Success);
+
+    bank_system::Account* accA = bank.login("userA", "pA");
+    bank_system::Account* accB = bank.login("userB", "pB");
+    REQUIRE(accA->get_balance() == userAStartingCash - bank_system::TransferLimit - 0.50);
+    REQUIRE(accB->get_balance() == userBStartingCash + bank_system::TransferLimit);
 }
 #endif
 
