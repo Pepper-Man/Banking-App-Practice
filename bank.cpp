@@ -290,9 +290,8 @@ namespace bank_system {
 		while (getline(transac_file, transaction_line)) {
 			if (transaction_line.empty()) continue;
 
-			std::size_t start = transaction_line.find(": ") + 2;
 			std::size_t end = transaction_line.find(',');
-			std::string trans_acc_name = transaction_line.substr(start, end - start);
+			std::string trans_acc_name = transaction_line.substr(0, end);
 			
 			auto it = _accounts.find(trans_acc_name);
 			if (it != _accounts.end()) {
@@ -317,14 +316,14 @@ namespace bank_system {
 		std::stringstream ss;
 
 		// Main transac data
-		ss << "Account: " << acc->get_username() << ", ";
-		ss << type << " of ";
-		ss << amount << " - New balance: ";
-		ss << acc->get_balance();
+		ss << acc->get_username() << ",";
+		ss << type << ",";
+		ss << amount << ",";
+		ss << acc->get_balance() << ",";
 		
 		// Timestamp stuff
 		auto now = std::chrono::system_clock::now();
-		ss << " - Time: " << std::format("{:%F %T}", now);
+		ss << std::format("{:%F %T}", now);
 
 		_transaction_buffer.push_back(ss.str());
 		acc->add_to_history(ss.str());
