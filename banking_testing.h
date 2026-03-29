@@ -604,9 +604,43 @@ TEST_CASE("Transfer fees and limits are applied correctly") {
     REQUIRE(accA->get_balance() == userAStartingCash - bank_system::TransferLimit - 0.50);
     REQUIRE(accB->get_balance() == userBStartingCash + bank_system::TransferLimit);
 }
+
+TEST_CASE("Users can filter account history by type") {
+    bank_system::clear_saved_data();
+    bank_system::clear_transac_data();
+
+    {
+        bank_system::Bank bank;
+        bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "John A", 40);
+
+        bank.deposit_to_account("userA", 50.0);
+        bank.deposit_to_account("userA", 75.0);
+        bank.deposit_to_account("userA", 25.0);
+
+        bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "James B", 45);
+        bank.transfer("userA", "userB", 50.0);
+        bank.transfer("userB", "userA", 25.0);
+
+        bank.withdraw_from_account("userA", 10.0);
+        bank.withdraw_from_account("userA", 5.0);
+    }
+    
+    bank_system::Bank new_bank;
+    bank_system::Account* accA = new_bank.login("userA", "pA");
+
+    REQUIRE(accA->get_history().size() == 7);
+    REQUIRE(accA->get_history_by_type("Deposit").size() == 3);
+    REQUIRE(accA->get_history_by_type("Withdrawal").size() == 2);
+    REQUIRE(accA->get_history_by_type("Transfer Out").size() == 1);
+    REQUIRE(accA->get_history_by_type("Transfer In").size() == 1);
+    REQUIRE(accA->get_history_by_type("Deposit")[1].find("userA,Deposit,75,125") != std::string::npos);
+}
 #endif
 
+
+///////////////////////////////////
 // More complex tests (~>10ms each)
+///////////////////////////////////
 #ifdef RUN_LONG_TESTS
 TEST_CASE("Create, deposit to and save 1000 accounts") {
     bank_system::Bank bank;

@@ -1,5 +1,6 @@
 #include "account.h"
 #include "constants.h"
+#include "utility.h"
 #include <iomanip>
 #include <ios>
 #include <iostream>
@@ -59,6 +60,19 @@ namespace bank_system {
 
 	bool Account::get_flagged() const {
 		return _flagged;
+	}
+
+	std::vector<std::string> Account::get_history_by_type(const std::string& type) const {
+		std::vector<std::string> found_transacs;
+
+		for (const std::string& transac : _history) {
+			// 0 = username, 1 = type, 2 = transac amount, 3 = balance, 4 = time
+			std::vector<std::string> parts = utility::split_csv_line(transac);
+
+			if (parts[1] == type) found_transacs.push_back(transac);
+		}
+
+		return found_transacs;
 	}
 
 	void Account::set_flagged(bool val) {

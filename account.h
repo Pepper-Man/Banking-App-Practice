@@ -21,6 +21,7 @@ namespace bank_system {
 		std::vector<std::string> get_history() const;
 		bank_system::AccountType get_type() const;
 		bool get_flagged() const;
+		std::vector<std::string> get_history_by_type(const std::string& type) const;
 
 		// Setters
 		void set_balance(double new_balance);

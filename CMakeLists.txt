@@ -12,7 +12,7 @@ endif()
 project ("BankingAppLatest")
 
 # Add source to this project's executable.
-add_executable (BankingAppLatest "banking_testing.h" "simple_test.h" "account.h" "account.cpp" "main.cpp"  "bank.h" "bank.cpp" "data_handler.h" "data_handler.cpp" "timer_util.h" "savings_account.h" "savings_account.cpp" "constants.h" "junior_account.h" "junior_account.cpp")
+add_executable (BankingAppLatest "banking_testing.h" "simple_test.h" "account.h" "account.cpp" "main.cpp"  "bank.h" "bank.cpp" "data_handler.h" "data_handler.cpp" "timer_util.h" "savings_account.h" "savings_account.cpp" "constants.h" "junior_account.h" "junior_account.cpp" "utility.h" "utility.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET BankingAppLatest PROPERTY CXX_STANDARD 20)
