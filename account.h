@@ -1,5 +1,6 @@
 #pragma once
 #include "constants.h"
+#include "data_handler.h"
 #include <string>
 #include <vector>
 
@@ -18,10 +19,10 @@ namespace bank_system {
 		std::string get_psw_hash() const;
 		std::string get_leg_name() const;
 		int get_age() const;
-		std::vector<std::string> get_history() const;
+		std::vector<TransactionData> get_history() const;
 		bank_system::AccountType get_type() const;
 		bool get_flagged() const;
-		std::vector<std::string> get_history_by_type(const std::string& type) const;
+		std::vector<TransactionData> get_history_by_type(TransactionType type) const;
 
 		// Setters
 		void set_balance(double new_balance);
@@ -32,7 +33,7 @@ namespace bank_system {
 		virtual TransactionStatus deposit(double amount);
 		virtual TransactionStatus withdraw(double amount);
 		bool change_password(const std::string& old_password, const std::string& new_password);
-		void add_to_history(const std::string& transaction);
+		void add_to_history(const TransactionData& transaction);
 
 	private:
 		std::string psw_hash(const std::string& password) const;
@@ -43,7 +44,7 @@ namespace bank_system {
 		std::string _password_hash;
 		std::string _legal_name;
 		int _age;
-		std::vector<std::string> _history;
+		std::vector<TransactionData> _history;
 		bank_system::AccountType _type;
 		bool _flagged = false;
 	};

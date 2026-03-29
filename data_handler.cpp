@@ -3,6 +3,7 @@
 #include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
+#include <chrono>
 #include <fstream>
 #include <ios>
 #include <memory>
@@ -121,15 +122,19 @@ namespace bank_system {
 		data_file.close();
 	}
 
-	void write_transac_data(const std::vector<std::string>& transac_data) {
+	void write_transac_data(const std::vector<TransactionData>& transac_data) {
 		std::ofstream audit_file("transactions.log", std::ios_base::app);
 
 		if (!audit_file.is_open()) {
 			throw std::runtime_error("Failed to open transaction log file!");
 		}
 
-		for (const std::string& transaction : transac_data) {
-			audit_file << transaction;
+		for (const TransactionData& transaction : transac_data) {
+			audit_file << transaction._username << ",";
+			audit_file << transac_type_to_string(transaction._type) << ",";
+			audit_file << transaction._amount << ",";
+			audit_file << transaction._balance << ",";
+			audit_file << std::chrono::system_clock::to_time_t(transaction._time);
 			audit_file << "\n";
 		}
 		audit_file.close();

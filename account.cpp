@@ -22,7 +22,7 @@ namespace bank_system {
 		_balance = new_balance;
 	}
 
-	void Account::add_to_history(const std::string& transaction) {
+	void Account::add_to_history(const TransactionData& transaction) {
 		_history.push_back(transaction);
 	}
 
@@ -50,7 +50,7 @@ namespace bank_system {
 		return _age;
 	}
 
-	std::vector<std::string> Account::get_history() const {
+	std::vector<TransactionData> Account::get_history() const {
 		return _history;
 	}
 
@@ -62,14 +62,11 @@ namespace bank_system {
 		return _flagged;
 	}
 
-	std::vector<std::string> Account::get_history_by_type(const std::string& type) const {
-		std::vector<std::string> found_transacs;
+	std::vector<TransactionData> Account::get_history_by_type(TransactionType type) const {
+		std::vector<TransactionData> found_transacs;
 
-		for (const std::string& transac : _history) {
-			// 0 = username, 1 = type, 2 = transac amount, 3 = balance, 4 = time
-			std::vector<std::string> parts = utility::split_csv_line(transac);
-
-			if (parts[1] == type) found_transacs.push_back(transac);
+		for (const TransactionData& transac : _history) {
+			if (transac._type == type) found_transacs.push_back(transac);
 		}
 
 		return found_transacs;

@@ -5,17 +5,16 @@
 #include "junior_account.h"
 #include "savings_account.h"
 #include <chrono>
-#include <ctime>
 #include <exception>
 #include <fstream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <cctype>
 #include <vector>
+#include "utility.h"
 
 namespace bank_system {
 	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit, double b_limit) {
@@ -76,7 +75,7 @@ namespace bank_system {
 				// Apply interest and log
 				double interest = acc->get_balance() * current_rate;
 				acc->deposit(interest);
-				log_transac(acc.get(), "Interest", interest);
+				log_transac(acc.get(), TransactionType::Interest, interest);
 				transactions_added++;
 			}
 		}
@@ -202,7 +201,7 @@ namespace bank_system {
 			// Only log transaction if it is successful/allowed
 			TransactionStatus status = it->second->deposit(amount);
 			if (status == TransactionStatus::Success) {
-				log_transac(it->second.get(), "Deposit", amount); // Record the event
+				log_transac(it->second.get(), TransactionType::Deposit, amount); // Record the event
 				return TransactionStatus::Success;
 			}
 			return status;
@@ -216,7 +215,7 @@ namespace bank_system {
 			// Only log transaction if it is successful/allowed
 			TransactionStatus status = it->second->withdraw(amount);
 			if (status == TransactionStatus::Success) {
-				log_transac(it->second.get(), "Withdrawal", amount);
+				log_transac(it->second.get(), TransactionType::Withdrawal, amount);
 				return TransactionStatus::Success;
 			}
 			return status;
@@ -230,7 +229,7 @@ namespace bank_system {
 			bool success = it->second->change_password(old_p, new_p);
 
 			if (success) {
-				log_transac(it->second.get(), "Password Change", 0.0);
+				log_transac(it->second.get(), TransactionType::PasswordChange, 0.0);
 			}
 			return true;
 		}
@@ -277,8 +276,8 @@ namespace bank_system {
 		}
 
 		// Both succeeded, now log
-		log_transac(from_it->second.get(), "Transfer Out", withdraw_amount);
-		log_transac(to_it->second.get(), "Transfer In", amount);
+		log_transac(from_it->second.get(), TransactionType::TransferOut, withdraw_amount);
+		log_transac(to_it->second.get(), TransactionType::TransferIn, amount);
 
 		return TransactionStatus::Success;
 	}
@@ -290,12 +289,12 @@ namespace bank_system {
 		while (getline(transac_file, transaction_line)) {
 			if (transaction_line.empty()) continue;
 
-			std::size_t end = transaction_line.find(',');
-			std::string trans_acc_name = transaction_line.substr(0, end);
+			std::vector<std::string> split_line = utility::split_csv_line(transaction_line);
 			
-			auto it = _accounts.find(trans_acc_name);
+			auto it = _accounts.find(split_line[0]);
 			if (it != _accounts.end()) {
-				it->second->add_to_history(transaction_line);
+				TransactionData transacData = { split_line[0], string_to_transac_type(split_line[1]), std::stod(split_line[2]), std::stod(split_line[3]), std::chrono::system_clock::now()};
+				it->second->add_to_history(transacData);
 			}
 		}
 	}
@@ -311,22 +310,12 @@ namespace bank_system {
 		write_account_data(_accounts);
 	}
 
-	void Bank::log_transac(Account* acc, std::string type, double amount) {
+	void Bank::log_transac(Account* acc, TransactionType type, double amount) {
 		if (!acc) return;
-		std::stringstream ss;
+		TransactionData transac_data = { acc->get_username(), type, amount, acc->get_balance(), std::chrono::system_clock::now() };
 
-		// Main transac data
-		ss << acc->get_username() << ",";
-		ss << type << ",";
-		ss << amount << ",";
-		ss << acc->get_balance() << ",";
-		
-		// Timestamp stuff
-		auto now = std::chrono::system_clock::now();
-		ss << std::format("{:%F %T}", now);
-
-		_transaction_buffer.push_back(ss.str());
-		acc->add_to_history(ss.str());
+		_transaction_buffer.push_back(transac_data);
+		acc->add_to_history(transac_data);
 	}
 
 	Bank::~Bank() {

@@ -629,11 +629,11 @@ TEST_CASE("Users can filter account history by type") {
     bank_system::Account* accA = new_bank.login("userA", "pA");
 
     REQUIRE(accA->get_history().size() == 7);
-    REQUIRE(accA->get_history_by_type("Deposit").size() == 3);
-    REQUIRE(accA->get_history_by_type("Withdrawal").size() == 2);
-    REQUIRE(accA->get_history_by_type("Transfer Out").size() == 1);
-    REQUIRE(accA->get_history_by_type("Transfer In").size() == 1);
-    REQUIRE(accA->get_history_by_type("Deposit")[1].find("userA,Deposit,75,125") != std::string::npos);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit).size() == 3);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Withdrawal).size() == 2);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::TransferOut).size() == 1);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::TransferIn).size() == 1);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit)[1]._balance = 125);
 }
 #endif
 

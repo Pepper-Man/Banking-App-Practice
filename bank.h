@@ -2,6 +2,7 @@
 
 #include "account.h"
 #include "constants.h"
+#include "data_handler.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -52,8 +53,8 @@ namespace bank_system {
 		// Faster to search than a simple vector; acc username is the key
 		std::unordered_map<std::string, std::unique_ptr<Account>> _accounts;
 
-		void log_transac(Account* acc, std::string type, double amount);
-		std::vector<std::string> _transaction_buffer;
+		void log_transac(Account* acc, TransactionType type, double amount);
+		std::vector<TransactionData> _transaction_buffer;
 		bool is_valid_acc_name(const std::string& name);
 	};
 }
