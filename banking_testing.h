@@ -155,7 +155,7 @@ TEST_CASE("Transactions are logged correctly") {
     REQUIRE(transac_file.is_open());
     std::string first_line;
     std::getline(transac_file, first_line);
-    REQUIRE(first_line == "Account: userA, Deposit of 69.69 - New balance: 69.69");
+    REQUIRE(first_line.find("Account: userA, Deposit of 69.69 - New balance: 69.69") != std::string::npos);
 }
 
 TEST_CASE("User cannot withdraw more than balance") {

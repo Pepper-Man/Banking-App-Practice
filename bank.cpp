@@ -4,6 +4,8 @@
 #include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
+#include <chrono>
+#include <ctime>
 #include <exception>
 #include <fstream>
 #include <memory>
@@ -313,10 +315,16 @@ namespace bank_system {
 	void Bank::log_transac(Account* acc, std::string type, double amount) {
 		if (!acc) return;
 		std::stringstream ss;
+
+		// Main transac data
 		ss << "Account: " << acc->get_username() << ", ";
 		ss << type << " of ";
 		ss << amount << " - New balance: ";
 		ss << acc->get_balance();
+		
+		// Timestamp stuff
+		auto now = std::chrono::system_clock::now();
+		ss << " - Time: " << std::format("{:%F %T}", now);
 
 		_transaction_buffer.push_back(ss.str());
 		acc->add_to_history(ss.str());
