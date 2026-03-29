@@ -59,27 +59,14 @@ namespace bank_system {
 
 	inline std::string transac_type_to_string(TransactionType type) {
 		switch (type) {
-		case TransactionType::Deposit:
-			return "Deposit";
-			break;
-		case TransactionType::Withdrawal:
-			return "Withdrawal";
-			break;
-		case TransactionType::TransferOut:
-			return "Transfer Out";
-			break;
-		case TransactionType::TransferIn:
-			return "Transfer In";
-			break;
-		case TransactionType::Interest:
-			return "Interest";
-			break;
-		case TransactionType::PasswordChange:
-			return "Password Change";
-			break;
-		default:
-			throw std::runtime_error("Invalid TransactionType enum!");
+			case TransactionType::Deposit:			return "Deposit";
+			case TransactionType::Withdrawal:		return "Withdrawal";
+			case TransactionType::TransferOut:		return "Transfer Out";
+			case TransactionType::TransferIn:		return "Transfer In";
+			case TransactionType::Interest:			return "Interest";
+			case TransactionType::PasswordChange:	return "Password Change";
 		}
+		return "Unknown";
 	}
 
 	inline const std::unordered_map<Currency, double> exchange_rates {
