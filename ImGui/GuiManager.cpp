@@ -26,7 +26,7 @@ namespace GuiManager {
     bool Init(const char* windowName, int width, int height) {
         g_wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiAppClass", NULL };
         RegisterClassExW(&g_wc);
-        g_hWnd = CreateWindowW(g_wc.lpszClassName, L"Noclip Utility", WS_OVERLAPPEDWINDOW, 100, 100, width, height, NULL, NULL, g_wc.hInstance, NULL);
+        g_hWnd = CreateWindowW(g_wc.lpszClassName, L"Bank System", WS_OVERLAPPEDWINDOW, 100, 100, width, height, NULL, NULL, g_wc.hInstance, NULL);
 
         DXGI_SWAP_CHAIN_DESC sd = {};
         sd.BufferCount = 2;
