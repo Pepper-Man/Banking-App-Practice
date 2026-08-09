@@ -9,8 +9,12 @@
 #include <iostream>
 #include "simple_test.h"
 #include <string>
+#include "Windows.h"
 
 int main() {
+	// Need this to force windows to make the program DPI aware so the font isn't blurry
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
 	// Initialise UI window
 	if (!GuiManager::Init("Banking System", 400, 300)) {
 		return -1;

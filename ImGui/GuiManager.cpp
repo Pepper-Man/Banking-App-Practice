@@ -53,6 +53,12 @@ namespace GuiManager {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+
+        // Nicer vector font
+        ImGuiIO& io = ImGui::GetIO();
+        ImFont* font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\consolab.ttf", 16.0f);
+        if (font == nullptr) io.Fonts->AddFontDefault();
+
         ImGui::StyleColorsDark();
         ImGui_ImplWin32_Init(g_hWnd);
         ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
