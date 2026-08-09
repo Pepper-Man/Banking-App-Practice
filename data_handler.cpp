@@ -1,4 +1,5 @@
 #include "account.h"
+#include "bank.h"
 #include "constants.h"
 #include "data_handler.h"
 #include "junior_account.h"

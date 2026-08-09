@@ -56,6 +56,9 @@ int main() {
 					CreationSuccess
 				};
 
+				static bool logged_in = false;
+				static bool log_in_failed = false;
+
 				static UserSubView activeView = UserSubView::None;
 
 				ImGui::PushID("User Home Page Scope");
@@ -129,6 +132,9 @@ int main() {
 					case UserSubView::LogIn: {
 						ImGui::PushID("User Log In Scope");
 
+						// Disable the three input widgets when the user is logged in
+						ImGui::BeginDisabled(logged_in);
+
 						// Account name
 						static std::string accName = "";
 						ImGui::InputTextWithHint("##loginnamelabel", "Account name...", &accName);
@@ -137,16 +143,31 @@ int main() {
 						static std::string password = "";
 						ImGui::InputTextWithHint("##loginpasswordlabel", "Password...", &password);
 
-						// Log in
+						// Log in logic
 						if (ImGui::Button("Log In")) {
 							bank_system::Account* acc = bank.login(accName, password);
 
 							if (acc != nullptr) {
 								std::cout << "User \"" << accName << "\" successfully logged in!" << std::endl;
+								logged_in = true;
+								log_in_failed = false;
 							}
 							else {
 								std::cout << "User \"" << accName << "\" incorrect login details!" << std::endl;
+								logged_in = false;
+								log_in_failed = true;
 							}
+						}
+
+						ImGui::EndDisabled();
+
+						// Show login success/failure text to user, and home page button if successful
+						if (logged_in) {
+							ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
+							ImGui::Button("Home Page");
+						}
+						else if (log_in_failed) {
+							ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s login failed!\nAre your username and password correct?", accName.c_str());
 						}
 						
 						ImGui::PopID();
