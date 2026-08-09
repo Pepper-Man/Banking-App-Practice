@@ -1,8 +1,12 @@
 #include "GuiManager.h"
 #include <d3d11.h>
+#include "d3dcommon.h"
+#include "dxgi.h"
+#include "dxgiformat.h"
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
+#include "Windows.h"
 
 #pragma comment(lib, "d3d11.lib")
 
@@ -16,7 +20,7 @@ static HWND                     g_hWnd = NULL;
 static WNDCLASSEXW              g_wc = {};
 static bool                     g_running = true;
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) return true;
     if (msg == WM_DESTROY) { PostQuitMessage(0); g_running = false; return 0; }
     return DefWindowProcW(hWnd, msg, wParam, lParam);
