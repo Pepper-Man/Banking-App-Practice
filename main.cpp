@@ -1,5 +1,7 @@
 #include "bank.h"
 #include "banking_testing.h"
+#include "constants.h"
+#include "data_handler.h"
 #include "imgui.h"
 #include "GuiManager.h"
 #include <iostream>
@@ -133,6 +135,11 @@ int main() {
 
 			// ------------- ADMIN AREA ---------------------------------------
 			if (ImGui::BeginTabItem("Admin")) {
+
+				if (ImGui::Button("DELETE ALL USER DATA")) {
+					bank_system::clear_saved_data();
+					bank_system::clear_transac_data();
+				}
 
 				ImGui::EndTabItem();
 			}
