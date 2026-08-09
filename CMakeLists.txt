@@ -46,5 +46,3 @@ if (MSVC)
 	add_compile_options(/CMAKE_VS_JUST_MY_CODE_DEBUGGING)
 	add_compile_options(/JMC)
 endif()
-
-# TODO: Add tests and install targets if needed.

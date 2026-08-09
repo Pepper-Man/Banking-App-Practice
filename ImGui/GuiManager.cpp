@@ -1,3 +1,4 @@
+#include "consola_compressed.h"
 #include "GuiManager.h"
 #include <d3d11.h>
 #include "d3dcommon.h"
@@ -56,8 +57,11 @@ namespace GuiManager {
 
         // Nicer vector font
         ImGuiIO& io = ImGui::GetIO();
-        ImFont* font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\consolab.ttf", 16.0f);
-        if (font == nullptr) io.Fonts->AddFontDefault();
+        ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(
+            ConsolaFont_compressed_data,
+            ConsolaFont_compressed_size,
+            16.0f
+        );
 
         ImGui::StyleColorsDark();
         ImGui_ImplWin32_Init(g_hWnd);
