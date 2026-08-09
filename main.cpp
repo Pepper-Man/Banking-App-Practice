@@ -1,11 +1,14 @@
+#include "account.h"
 #include "bank.h"
 #include "banking_testing.h"
 #include "constants.h"
 #include "data_handler.h"
 #include "imgui.h"
+#include "ImGui/imgui_stdlib.h"
 #include "GuiManager.h"
 #include <iostream>
 #include "simple_test.h"
+#include <string>
 
 int main() {
 	// Initialise UI window
@@ -55,6 +58,8 @@ int main() {
 
 				static UserSubView activeView = UserSubView::None;
 
+				ImGui::PushID("User Home Page Scope");
+
 				if (ImGui::Button("Create Account")) {
 					activeView = UserSubView::CreateAccount;
 				}
@@ -65,6 +70,8 @@ int main() {
 					activeView = UserSubView::LogIn;
 				}
 
+				ImGui::PopID();
+
 				ImGui::Separator();
 
 				switch (activeView) {
@@ -72,12 +79,12 @@ int main() {
 						ImGui::Text("Account Creation");
 
 						// Account name
-						static char accName[256] = "";
-						ImGui::InputTextWithHint("##accountnamelabel", "Account name...", accName, IM_COUNTOF(accName));
+						static std::string accName = "";
+						ImGui::InputTextWithHint("##accountnamelabel", "Account name...", &accName);
 
 						// Real name
-						static char realName[256] = "";
-						ImGui::InputTextWithHint("##realnamelabel", "Full name...", realName, IM_COUNTOF(realName));
+						static std::string realName = "";
+						ImGui::InputTextWithHint("##realnamelabel", "Full name...", &realName);
 
 						// Age
 						static int age;
@@ -86,12 +93,12 @@ int main() {
 						ImGui::Text("Age");
 
 						// Password
-						static char password[256] = "";
-						ImGui::InputTextWithHint("##passwordnamelabel", "Password...", password, IM_COUNTOF(password));
+						static std::string password = "";
+						ImGui::InputTextWithHint("##passwordnamelabel", "Password...", &password);
 
 						// Password confirmation
-						static char confirmPass[256] = "";
-						ImGui::InputTextWithHint("##confirmpassnamelabel", "Confirm password...", confirmPass, IM_COUNTOF(confirmPass));
+						static std::string confirmPass = "";
+						ImGui::InputTextWithHint("##confirmpassnamelabel", "Confirm password...", &confirmPass);
 
 						// Account type
 						static bank_system::AccountType selectedType = bank_system::AccountType::Standard;
@@ -105,6 +112,7 @@ int main() {
 							// TODO: Add verifcation logic
 
 							bank.create_account(selectedType, accName, password, realName, age);
+							bank.save();
 
 							accName[0] = '\0'; // Clear when done
 							activeView = UserSubView::CreationSuccess;
@@ -119,6 +127,30 @@ int main() {
 						break;
 					}
 					case UserSubView::LogIn: {
+						ImGui::PushID("User Log In Scope");
+
+						// Account name
+						static std::string accName = "";
+						ImGui::InputTextWithHint("##loginnamelabel", "Account name...", &accName);
+
+						// Password
+						static std::string password = "";
+						ImGui::InputTextWithHint("##loginpasswordlabel", "Password...", &password);
+
+						// Log in
+						if (ImGui::Button("Log In")) {
+							bank_system::Account* acc = bank.login(accName, password);
+
+							if (acc != nullptr) {
+								std::cout << "User \"" << accName << "\" successfully logged in!" << std::endl;
+							}
+							else {
+								std::cout << "User \"" << accName << "\" incorrect login details!" << std::endl;
+							}
+						}
+						
+						ImGui::PopID();
+
 						break;
 					}
 					case UserSubView::None:
