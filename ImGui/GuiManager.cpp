@@ -21,9 +21,43 @@ static HWND                     g_hWnd = NULL;
 static WNDCLASSEXW              g_wc = {};
 static bool                     g_running = true;
 
+void CleanupRenderTarget() {
+    if (g_mainRenderTargetView) {
+        g_mainRenderTargetView->Release();
+        g_mainRenderTargetView = nullptr;
+    }
+}
+
+void CreateRenderTarget() {
+    ID3D11Texture2D* pBackBuffer = nullptr;
+
+    // Fetch the back buffer texture from the swapchain
+    g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+
+    if (pBackBuffer) {
+        // Create the new render target view from the resized back buffer
+        g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_mainRenderTargetView);
+        pBackBuffer->Release();
+    }
+}
+
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) return true;
-    if (msg == WM_DESTROY) { PostQuitMessage(0); g_running = false; return 0; }
+
+    if (msg == WM_SIZE) {
+        // Don't resize if minimized
+        if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED) {
+            CleanupRenderTarget();
+            g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+            CreateRenderTarget();
+        }
+    }
+
+    if (msg == WM_DESTROY) { 
+        PostQuitMessage(0); g_running = false; 
+        return 0; 
+    
+    }
     return DefWindowProcW(hWnd, msg, wParam, lParam);
 }
 

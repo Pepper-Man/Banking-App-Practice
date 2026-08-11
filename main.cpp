@@ -16,11 +16,13 @@ int main() {
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	// Initialise UI window
-	if (!GuiManager::Init("Banking System", 400, 300)) {
+	if (!GuiManager::Init("Banking System", 500, 350)) {
 		return -1;
 	}
 
 	std::cout << "Running UI..." << std::endl;
+
+	bank_system::Bank bank;
 
 	// UI loop
 	while (GuiManager::IsRunning()) {
@@ -31,8 +33,6 @@ int main() {
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
 
 		ImGui::Begin("MainLayout", nullptr, windowFlags);
-
-		bank_system::Bank bank;
 
 		if (ImGui::BeginTabBar("MainNavigationTabBar")) {
 			// ------------- BANK SYSTEM TESTS --------------------------------
@@ -57,8 +57,11 @@ int main() {
 					None,
 					CreateAccount,
 					LogIn,
-					CreationSuccess
+					CreationSuccess,
+					AccountHome
 				};
+
+				static bank_system::Account* logged_in_account = nullptr;
 
 				static bool logged_in = false;
 				static bool log_in_failed = false;
@@ -121,7 +124,7 @@ int main() {
 							bank.create_account(selectedType, accName, password, realName, age);
 							bank.save();
 
-							accName[0] = '\0'; // Clear when done
+							accName.clear();
 							activeView = UserSubView::CreationSuccess;
 						}
 						break;
@@ -149,9 +152,9 @@ int main() {
 
 						// Log in logic
 						if (ImGui::Button("Log In")) {
-							bank_system::Account* acc = bank.login(accName, password);
+							logged_in_account = bank.login(accName, password);
 
-							if (acc != nullptr) {
+							if (logged_in_account != nullptr) {
 								std::cout << "User \"" << accName << "\" successfully logged in!" << std::endl;
 								logged_in = true;
 								log_in_failed = false;
@@ -168,7 +171,9 @@ int main() {
 						// Show login success/failure text to user, and home page button if successful
 						if (logged_in) {
 							ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
-							ImGui::Button("Home Page");
+							if (ImGui::Button("Home Page")) {
+								activeView = UserSubView::AccountHome;
+							}
 						}
 						else if (log_in_failed) {
 							ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s login failed!\nAre your username and password correct?", accName.c_str());
@@ -178,6 +183,15 @@ int main() {
 
 						break;
 					}
+					case UserSubView::AccountHome: {
+						if (logged_in_account == nullptr) {
+							ImGui::Text("No active user session.");
+							break;
+						}
+
+						ImGui::Text("User: %s", logged_in_account->get_username().c_str());
+						break;
+					}	
 					case UserSubView::None:
 					default:
 						ImGui::Text("Please select an option above.");
