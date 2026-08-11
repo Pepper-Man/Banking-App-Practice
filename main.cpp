@@ -11,6 +11,11 @@
 #include <string>
 #include "Windows.h"
 
+// Forward declaration for tab renderers
+void RenderBankTestsTab();
+void RenderUserTab(bank_system::Bank& bank);
+void RenderAdminTab();
+
 int main() {
 	// Need this to force windows to make the program DPI aware so the font isn't blurry
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -35,275 +40,20 @@ int main() {
 		ImGui::Begin("MainLayout", nullptr, windowFlags);
 
 		if (ImGui::BeginTabBar("MainNavigationTabBar")) {
-			// ------------- BANK SYSTEM TESTS --------------------------------
 			if (ImGui::BeginTabItem("Bank System Tests")) {
-				static bool run_long = false;
-
-				if (ImGui::Button("Run Bank Tests")) {
-					run_bank_tests(run_long);
-				}
-
-				ImGui::SameLine();
-				// Only run long tests if checkbox checked
-				ImGui::Checkbox("Run Long Tests", &run_long);
-
+				RenderBankTestsTab();
 				ImGui::EndTabItem();
 			}
-			// ----------------------------------------------------------------
 
-			// ------------- USER AREA ----------------------------------------
 			if (ImGui::BeginTabItem("User")) {
-				enum class UserSubView {
-					None,
-					CreateAccount,
-					LogIn,
-					CreationSuccess,
-					AccountHome
-				};
-
-				static bank_system::Account* logged_in_account = nullptr;
-
-				static bool logged_in = false;
-				static bool log_in_failed = false;
-
-				static UserSubView activeView = UserSubView::None;
-
-				ImGui::PushID("User Home Page Scope");
-
-				if (ImGui::Button("Create Account")) {
-					activeView = UserSubView::CreateAccount;
-				}
-
-				ImGui::SameLine();
-
-				if (ImGui::Button("Log In")) {
-					activeView = UserSubView::LogIn;
-				}
-
-				ImGui::PopID();
-
-				ImGui::Separator();
-
-				switch (activeView) {
-					case UserSubView::CreateAccount: {
-						ImGui::Text("Account Creation");
-
-						// Account name
-						static std::string accName = "";
-						ImGui::InputTextWithHint("##accountnamelabel", "Account name...", &accName);
-
-						// Real name
-						static std::string realName = "";
-						ImGui::InputTextWithHint("##realnamelabel", "Full name...", &realName);
-
-						// Age
-						static int age;
-						ImGui::InputInt("##agelabel", &age);
-						ImGui::SameLine();
-						ImGui::Text("Age");
-
-						// Password
-						static std::string password = "";
-						ImGui::InputTextWithHint("##passwordnamelabel", "Password...", &password);
-
-						// Password confirmation
-						static std::string confirmPass = "";
-						ImGui::InputTextWithHint("##confirmpassnamelabel", "Confirm password...", &confirmPass);
-
-						// Account type
-						static bank_system::AccountType selectedType = bank_system::AccountType::Standard;
-						const char* accountTypes[] = { "Standard", "Savings", "Junior" };
-						static int item_current = 0;
-						if (ImGui::Combo("Account Type", &item_current, accountTypes, IM_COUNTOF(accountTypes))) {
-							selectedType = static_cast<bank_system::AccountType>(item_current);
-						}
-
-						static bool password_mismatch = false;
-
-						if (ImGui::Button("Submit")) {
-							if (password != confirmPass) {
-								password_mismatch = true;
-							}
-							else {
-								password_mismatch = false;
-								bank.create_account(selectedType, accName, password, realName, age);
-								bank.save();
-
-								accName.clear();
-								realName.clear();
-								age = 0;
-								password.clear();
-								confirmPass.clear();
-								activeView = UserSubView::CreationSuccess;
-							}
-						}
-
-						// Error text for password mismatch
-						if (password_mismatch) {
-							ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Passwords do not match!");
-						}
-
-						break;
-					}
-					case UserSubView::CreationSuccess: {
-						ImGui::Text("Account successfully created!\nPlease click the button below to log in.");
-						if (ImGui::Button("Go to log-in page")) {
-							activeView = UserSubView::LogIn;
-						}
-						break;
-					}
-					case UserSubView::LogIn: {
-						ImGui::PushID("User Log In Scope");
-
-						// Disable the three input widgets when the user is logged in
-						ImGui::BeginDisabled(logged_in);
-
-						// Account name
-						static std::string accName = "";
-						ImGui::InputTextWithHint("##loginnamelabel", "Account name...", &accName);
-
-						// Password
-						static std::string password = "";
-						ImGui::InputTextWithHint("##loginpasswordlabel", "Password...", &password);
-
-						// Log in logic
-						if (ImGui::Button("Log In")) {
-							logged_in_account = bank.login(accName, password);
-
-							if (logged_in_account != nullptr) {
-								std::cout << "User \"" << accName << "\" successfully logged in!" << std::endl;
-								logged_in = true;
-								log_in_failed = false;
-							}
-							else {
-								std::cout << "User \"" << accName << "\" incorrect login details!" << std::endl;
-								logged_in = false;
-								log_in_failed = true;
-							}
-						}
-
-						ImGui::EndDisabled();
-
-						// Show login success/failure text to user, and home page button if successful
-						if (logged_in) {
-							ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "User \"%s\" successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
-							if (ImGui::Button("Home Page")) {
-								activeView = UserSubView::AccountHome;
-							}
-						}
-						else if (log_in_failed) {
-							ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s login failed!\nAre your username and password correct?", accName.c_str());
-						}
-						
-						ImGui::PopID();
-
-						break;
-					}
-					case UserSubView::AccountHome: {
-						if (logged_in_account == nullptr) {
-							ImGui::Text("No active user session.");
-							break;
-						}
-
-						static double acc_balance = 0.00;
-						static bool has_fetched_balance = false;
-
-						ImGui::Text("User: %s", logged_in_account->get_username().c_str());
-						ImGui::Text("Full Name: %s", logged_in_account->get_leg_name().c_str());
-						ImGui::Text("Age: %i", logged_in_account->get_age());
-
-						// Get account balance
-						if (ImGui::Button("Get Balance")) {
-							acc_balance = logged_in_account->get_balance();
-							has_fetched_balance = true;
-						}
-						if (has_fetched_balance) {
-							ImGui::SameLine();
-							ImGui::Text("£%.2f", acc_balance);
-						}
-
-						// Deposit
-						if (ImGui::Button("Deposit")) {
-							ImGui::OpenPopup("Deposit Funds");
-						}
-
-						ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-						ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-						ImGui::SetNextWindowSize(ImVec2(320, 0)); // Fixed 320px width, auto-fit height
-
-						if (ImGui::BeginPopupModal("Deposit Funds", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-							static double deposit_amount;
-							ImGui::Text("Enter amount to deposit:");
-							ImGui::SetNextItemWidth(-1.0f);
-							ImGui::Text("£");
-							ImGui::SameLine();
-							ImGui::InputDouble("##depositamount", &deposit_amount, 0.0, 0.0, "%.2f");
-
-							ImGui::Spacing();
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							// Cancel button (red)
-							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
-							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
-							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.12f, 0.12f, 1.0f));
-							if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-								deposit_amount = 0.0;
-								ImGui::CloseCurrentPopup();
-							}
-							ImGui::PopStyleColor(3);
-
-							ImGui::SameLine();
-
-							// Confirm button (green)
-							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.55f, 0.22f, 1.0f));
-							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.68f, 0.28f, 1.0f));
-							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
-							if (ImGui::Button("Confirm", ImVec2(120, 0))) {
-								if (deposit_amount > 0.0) {
-									logged_in_account->deposit(deposit_amount);
-									bank.save();
-
-									deposit_amount = 0.0; // Reset
-									ImGui::CloseCurrentPopup();
-								}
-							}
-							ImGui::PopStyleColor(3);
-
-							ImGui::EndPopup();
-						}
-						
-
-						// Withdraw
-						if (ImGui::Button("Withdraw")) {
-
-						}
-
-						break;
-					}	
-					case UserSubView::None:
-					default:
-						ImGui::Text("Please select an option above.");
-						break;
-				}
-
-				
-
+				RenderUserTab(bank);
 				ImGui::EndTabItem();
 			}
-			// ----------------------------------------------------------------
 
-			// ------------- ADMIN AREA ---------------------------------------
 			if (ImGui::BeginTabItem("Admin")) {
-
-				if (ImGui::Button("DELETE ALL USER DATA")) {
-					bank_system::clear_saved_data();
-					bank_system::clear_transac_data();
-				}
-
+				RenderAdminTab();
 				ImGui::EndTabItem();
 			}
-			// ----------------------------------------------------------------
 
 			ImGui::EndTabBar();
 		}
@@ -314,4 +64,243 @@ int main() {
 
 	GuiManager::Shutdown();
 	return 0;
+}
+
+void RenderBankTestsTab() {
+	static bool run_long = false;
+
+	if (ImGui::Button("Run Bank Tests")) {
+		run_bank_tests(run_long);
+	}
+
+	ImGui::SameLine();
+	// Only run long tests if checkbox checked
+	ImGui::Checkbox("Run Long Tests", &run_long);
+}
+
+void RenderAdminTab() {
+	if (ImGui::Button("DELETE ALL USER DATA")) {
+		bank_system::clear_saved_data();
+		bank_system::clear_transac_data();
+	}
+}
+
+enum class UserSubView {
+	None,
+	CreateAccount,
+	LogIn,
+	CreationSuccess,
+	AccountHome
+};
+
+// Helper function for rendering the deposit overlay window
+void RenderDepositModal(bank_system::Bank& bank, bank_system::Account* logged_in_account) {
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(ImVec2(320, 0)); // Fixed 320px width, auto-fit height
+
+	if (ImGui::BeginPopupModal("Deposit Funds", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		static double deposit_amount;
+		ImGui::Text("Enter amount to deposit:");
+		ImGui::SetNextItemWidth(-1.0f);
+		ImGui::Text("£");
+		ImGui::SameLine();
+		ImGui::InputDouble("##depositamount", &deposit_amount, 0.0, 0.0, "%.2f");
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// Cancel button (red)
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.12f, 0.12f, 1.0f));
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			deposit_amount = 0.0;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::PopStyleColor(3);
+
+		ImGui::SameLine();
+
+		// Confirm button (green)
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.55f, 0.22f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.68f, 0.28f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
+		if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+			if (deposit_amount > 0.0) {
+				logged_in_account->deposit(deposit_amount);
+				bank.save();
+
+				deposit_amount = 0.0; // Reset
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		ImGui::PopStyleColor(3);
+
+		ImGui::EndPopup();
+	}
+}
+
+
+void RenderUserTab(bank_system::Bank& bank) {
+	static bank_system::Account* logged_in_account = nullptr;
+	static bool logged_in = false;
+	static bool log_in_failed = false;
+	static UserSubView activeView = UserSubView::None;
+
+	ImGui::PushID("User Home Page Scope");
+	if (ImGui::Button("Create Account")) {
+		activeView = UserSubView::CreateAccount;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Log In")) {
+		activeView = UserSubView::LogIn;
+	}
+	ImGui::PopID();
+
+	ImGui::Separator();
+
+	switch (activeView) {
+	case UserSubView::CreateAccount: {
+		ImGui::Text("Account Creation");
+
+		static std::string accName = "";
+		ImGui::InputTextWithHint("##accountnamelabel", "Account name...", &accName);
+
+		static std::string realName = "";
+		ImGui::InputTextWithHint("##realnamelabel", "Full name...", &realName);
+
+		static int age = 0;
+		ImGui::InputInt("##agelabel", &age);
+		ImGui::SameLine();
+		ImGui::Text("Age");
+
+		static std::string password = "";
+		ImGui::InputTextWithHint("##passwordnamelabel", "Password...", &password, ImGuiInputTextFlags_Password);
+
+		static std::string confirmPass = "";
+		ImGui::InputTextWithHint("##confirmpassnamelabel", "Confirm password...", &confirmPass, ImGuiInputTextFlags_Password);
+
+		static bank_system::AccountType selectedType = bank_system::AccountType::Standard;
+		const char* accountTypes[] = { "Standard", "Savings", "Junior" };
+		static int item_current = 0;
+		if (ImGui::Combo("Account Type", &item_current, accountTypes, IM_COUNTOF(accountTypes))) {
+			selectedType = static_cast<bank_system::AccountType>(item_current);
+		}
+
+		static bool password_mismatch = false;
+
+		if (ImGui::Button("Submit")) {
+			if (password != confirmPass) {
+				password_mismatch = true;
+			}
+			else {
+				password_mismatch = false;
+				bank.create_account(selectedType, accName, password, realName, age);
+				bank.save();
+
+				accName.clear();
+				realName.clear();
+				age = 0;
+				password.clear();
+				confirmPass.clear();
+				activeView = UserSubView::CreationSuccess;
+			}
+		}
+
+		if (password_mismatch) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Passwords do not match!");
+		}
+		break;
+	}
+
+	case UserSubView::CreationSuccess: {
+		ImGui::Text("Account successfully created!\nPlease click the button below to log in.");
+		if (ImGui::Button("Go to log-in page")) {
+			activeView = UserSubView::LogIn;
+		}
+		break;
+	}
+
+	case UserSubView::LogIn: {
+		ImGui::PushID("User Log In Scope");
+
+		ImGui::BeginDisabled(logged_in);
+
+		static std::string accName = "";
+		ImGui::InputTextWithHint("##loginnamelabel", "Account name...", &accName);
+
+		static std::string password = "";
+		ImGui::InputTextWithHint("##loginpasswordlabel", "Password...", &password, ImGuiInputTextFlags_Password);
+
+		if (ImGui::Button("Log In")) {
+			logged_in_account = bank.login(accName, password);
+
+			if (logged_in_account != nullptr) {
+				std::cout << "User \"" << accName << "\" successfully logged in!" << std::endl;
+				logged_in = true;
+				log_in_failed = false;
+			}
+			else {
+				std::cout << "User \"" << accName << "\" incorrect login details!" << std::endl;
+				logged_in = false;
+				log_in_failed = true;
+			}
+		}
+
+		ImGui::EndDisabled();
+
+		if (logged_in) {
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "User \"%s\" successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
+			if (ImGui::Button("Home Page")) {
+				activeView = UserSubView::AccountHome;
+			}
+		}
+		else if (log_in_failed) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s login failed!\nAre your username and password correct?", accName.c_str());
+		}
+
+		ImGui::PopID();
+		break;
+	}
+
+	case UserSubView::AccountHome: {
+		if (logged_in_account == nullptr) {
+			ImGui::Text("No active user session.");
+			break;
+		}
+
+		static double acc_balance = 0.00;
+		static bool has_fetched_balance = false;
+
+		ImGui::Text("User: %s", logged_in_account->get_username().c_str());
+		ImGui::Text("Full Name: %s", logged_in_account->get_leg_name().c_str());
+		ImGui::Text("Age: %i", logged_in_account->get_age());
+
+		if (ImGui::Button("Get Balance")) {
+			acc_balance = logged_in_account->get_balance();
+			has_fetched_balance = true;
+		}
+		if (has_fetched_balance) {
+			ImGui::SameLine();
+			ImGui::Text("£%.2f", acc_balance);
+		}
+
+		if (ImGui::Button("Deposit")) {
+			ImGui::OpenPopup("Deposit Funds");
+		}
+		RenderDepositModal(bank, logged_in_account);
+
+		if (ImGui::Button("Withdraw")) {
+			
+		}
+		break;
+	}
+
+	case UserSubView::None:
+	default:
+		ImGui::Text("Please select an option above.");
+		break;
+	}
 }
