@@ -118,15 +118,31 @@ int main() {
 							selectedType = static_cast<bank_system::AccountType>(item_current);
 						}
 
+						static bool password_mismatch = false;
+
 						if (ImGui::Button("Submit")) {
-							// TODO: Add verifcation logic
+							if (password != confirmPass) {
+								password_mismatch = true;
+							}
+							else {
+								password_mismatch = false;
+								bank.create_account(selectedType, accName, password, realName, age);
+								bank.save();
 
-							bank.create_account(selectedType, accName, password, realName, age);
-							bank.save();
-
-							accName.clear();
-							activeView = UserSubView::CreationSuccess;
+								accName.clear();
+								realName.clear();
+								age = 0;
+								password.clear();
+								confirmPass.clear();
+								activeView = UserSubView::CreationSuccess;
+							}
 						}
+
+						// Error text for password mismatch
+						if (password_mismatch) {
+							ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Passwords do not match!");
+						}
+
 						break;
 					}
 					case UserSubView::CreationSuccess: {
@@ -170,7 +186,7 @@ int main() {
 
 						// Show login success/failure text to user, and home page button if successful
 						if (logged_in) {
-							ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
+							ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "User \"%s\" successfully logged in!\nPress the button below to proceed to your Home Page.", accName.c_str());
 							if (ImGui::Button("Home Page")) {
 								activeView = UserSubView::AccountHome;
 							}
