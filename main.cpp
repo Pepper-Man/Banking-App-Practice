@@ -205,7 +205,80 @@ int main() {
 							break;
 						}
 
+						static double acc_balance = 0.00;
+						static bool has_fetched_balance = false;
+
 						ImGui::Text("User: %s", logged_in_account->get_username().c_str());
+						ImGui::Text("Full Name: %s", logged_in_account->get_leg_name().c_str());
+						ImGui::Text("Age: %i", logged_in_account->get_age());
+
+						// Get account balance
+						if (ImGui::Button("Get Balance")) {
+							acc_balance = logged_in_account->get_balance();
+							has_fetched_balance = true;
+						}
+						if (has_fetched_balance) {
+							ImGui::SameLine();
+							ImGui::Text("£%.2f", acc_balance);
+						}
+
+						// Deposit
+						if (ImGui::Button("Deposit")) {
+							ImGui::OpenPopup("Deposit Funds");
+						}
+
+						ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+						ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+						ImGui::SetNextWindowSize(ImVec2(320, 0)); // Fixed 320px width, auto-fit height
+
+						if (ImGui::BeginPopupModal("Deposit Funds", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+							static double deposit_amount;
+							ImGui::Text("Enter amount to deposit:");
+							ImGui::SetNextItemWidth(-1.0f);
+							ImGui::Text("£");
+							ImGui::SameLine();
+							ImGui::InputDouble("##depositamount", &deposit_amount, 0.0, 0.0, "%.2f");
+
+							ImGui::Spacing();
+							ImGui::Separator();
+							ImGui::Spacing();
+
+							// Cancel button (red)
+							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
+							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
+							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.12f, 0.12f, 1.0f));
+							if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+								deposit_amount = 0.0;
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::PopStyleColor(3);
+
+							ImGui::SameLine();
+
+							// Confirm button (green)
+							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.55f, 0.22f, 1.0f));
+							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.68f, 0.28f, 1.0f));
+							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
+							if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+								if (deposit_amount > 0.0) {
+									logged_in_account->deposit(deposit_amount);
+									bank.save();
+
+									deposit_amount = 0.0; // Reset
+									ImGui::CloseCurrentPopup();
+								}
+							}
+							ImGui::PopStyleColor(3);
+
+							ImGui::EndPopup();
+						}
+						
+
+						// Withdraw
+						if (ImGui::Button("Withdraw")) {
+
+						}
+
 						break;
 					}	
 					case UserSubView::None:
