@@ -21,7 +21,7 @@ int main() {
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	// Initialise UI window
-	if (!GuiManager::Init("Banking System", 500, 350)) {
+	if (!GuiManager::Init("Banking System", 550, 350)) {
 		return -1;
 	}
 
@@ -93,11 +93,39 @@ enum class UserSubView {
 	AccountHome
 };
 
+static std::string GetTransactionErrorMessage(bank_system::TransactionStatus transaction_status) {
+	switch (transaction_status) {
+	case bank_system::TransactionStatus::InsufficientFunds:
+		return "You have insufficient funds for this transaction!";
+		break;
+	case bank_system::TransactionStatus::ExceedsAccountLimit:
+		return "This amount exceeds your account's withdrawal limit!";
+		break;
+	case bank_system::TransactionStatus::ExceedsBankLimit:
+		return "This amount exceeds the bank's withdrawal limit!";
+		break;
+	case bank_system::TransactionStatus::AccountLocked:
+		return "Cannot complete transaction - your account is locked!";
+		break;
+	case bank_system::TransactionStatus::InvalidAmount:
+		return "This amount is not valid! Make sure it is not negative.";
+		break;
+	case bank_system::TransactionStatus::UnknownAccount:
+		return "Destination account cannot be found!";
+		break;
+	case bank_system::TransactionStatus::SameAccount:
+		return "You are attempting to transfer to and from the same account!";
+		break;
+	}
+}
+
 // Helper function for rendering the deposit/withdrawal overlay window
 void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(320, 0)); // Fixed 320px width, auto-fit height
+	ImGui::SetNextWindowSize(ImVec2(500, 0)); // Fixed 320px width, auto-fit height
+
+	static bank_system::TransactionStatus transaction_status{};
 
 	if (ImGui::BeginPopupModal(window_name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		static double funds_change_amount;
@@ -129,23 +157,32 @@ void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logge
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
 		if (ImGui::Button("Confirm", ImVec2(120, 0))) {
 			if (funds_change_amount > 0.0) {
+				
+
 				if (window_name == "Deposit Funds") {
-					logged_in_account->deposit(funds_change_amount);
-					bank.save();
+					transaction_status = logged_in_account->deposit(funds_change_amount);
 				}
 				else if (window_name == "Withdraw Funds") {
-					logged_in_account->withdraw(funds_change_amount);
-					bank.save();
+					transaction_status = logged_in_account->withdraw(funds_change_amount);
 				}
 				else {
 					std::cout << "Unknown fund change type!" << std::endl;
 				}
 
-				funds_change_amount = 0.0; // Reset
-				ImGui::CloseCurrentPopup();
+				if (transaction_status == bank_system::TransactionStatus::Success) {
+					bank.save();
+					funds_change_amount = 0.0;
+					ImGui::CloseCurrentPopup();
+				}
 			}
 		}
 		ImGui::PopStyleColor(3);
+
+		// If error occurred, show error message to user
+		if (transaction_status != bank_system::TransactionStatus::Success) {
+			ImGui::Spacing();
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), GetTransactionErrorMessage(transaction_status).c_str());
+		}
 
 		ImGui::EndPopup();
 	}
@@ -298,12 +335,12 @@ void RenderUserTab(bank_system::Bank& bank) {
 		if (ImGui::Button("Deposit")) {
 			ImGui::OpenPopup("Deposit Funds");
 		}
-		RenderFundsChangeModal(bank, logged_in_account, "Deposit Funds", "Enter amount to deposit :");
+		RenderFundsChangeModal(bank, logged_in_account, "Deposit Funds", "Enter amount to deposit:");
 
 		if (ImGui::Button("Withdraw")) {
 			ImGui::OpenPopup("Withdraw Funds");
 		}
-		RenderFundsChangeModal(bank, logged_in_account, "Withdraw Funds", "Enter amount to withdraw :");
+		RenderFundsChangeModal(bank, logged_in_account, "Withdraw Funds", "Enter amount to withdraw:");
 
 		break;
 	}
