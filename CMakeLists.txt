@@ -38,6 +38,18 @@ add_executable (BankingAppLatest
 
 target_include_directories(BankingAppLatest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ImGui")
 
+# SQLiteCpp
+include (FetchContent)
+
+FetchContent_Declare(
+	SQLiteCpp
+	GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp.git
+	GIT_TAG 3.3.3
+)
+
+FetchContent_MakeAvailable(SQLiteCpp)
+target_link_libraries(BankingAppLatest PRIVATE SQLiteCpp)
+
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET BankingAppLatest PROPERTY CXX_STANDARD 20)
 endif()
