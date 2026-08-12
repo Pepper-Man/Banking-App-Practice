@@ -628,7 +628,7 @@ TEST_CASE("Users can filter account history by type") {
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Withdrawal).size() == 2);
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::TransferOut).size() == 1);
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::TransferIn).size() == 1);
-    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit)[1]._balance = 125);
+    REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit)[1]._balance == 125);
 }
 
 
