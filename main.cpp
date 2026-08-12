@@ -88,14 +88,18 @@ int main() {
 
 void RenderBankTestsTab() {
 	static bool run_long = false;
+	static bool run_database = false;
 
 	if (ImGui::Button("Run Bank Tests")) {
-		run_bank_tests(run_long);
+		run_bank_tests(run_long, run_database);
 	}
 
-	ImGui::SameLine();
 	// Only run long tests if checkbox checked
+	ImGui::SameLine();
 	ImGui::Checkbox("Run Long Tests", &run_long);
+	// Only run database tests if checkbox checked
+	ImGui::SameLine();
+	ImGui::Checkbox("Run Database Tests", &run_database);
 }
 
 void RenderAdminTab() {

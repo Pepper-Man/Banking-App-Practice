@@ -9,6 +9,8 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/SQLiteCpp.h>
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -774,4 +776,18 @@ TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves 
 
     bank_system::Bank new_bank;
     REQUIRE(new_bank.get_total_bank_balance() == 90 * num_accounts);
+}
+
+TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {
+    bool opened_successfully = false;
+
+    try {
+        SQLite::Database db("test.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+        opened_successfully = true;
+    }
+    catch (const std::exception& e) {
+        opened_successfully = false;
+    }
+    
+    REQUIRE(opened_successfully == true);
 }
