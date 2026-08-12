@@ -93,19 +93,19 @@ enum class UserSubView {
 	AccountHome
 };
 
-// Helper function for rendering the deposit overlay window
-void RenderDepositModal(bank_system::Bank& bank, bank_system::Account* logged_in_account) {
+// Helper function for rendering the deposit/withdrawal overlay window
+void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(320, 0)); // Fixed 320px width, auto-fit height
 
-	if (ImGui::BeginPopupModal("Deposit Funds", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		static double deposit_amount;
-		ImGui::Text("Enter amount to deposit:");
+	if (ImGui::BeginPopupModal(window_name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		static double funds_change_amount;
+		ImGui::Text(display_text.c_str());
 		ImGui::SetNextItemWidth(-1.0f);
 		ImGui::Text("£");
 		ImGui::SameLine();
-		ImGui::InputDouble("##depositamount", &deposit_amount, 0.0, 0.0, "%.2f");
+		ImGui::InputDouble("##depositamount", &funds_change_amount, 0.0, 0.0, "%.2f");
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -116,7 +116,7 @@ void RenderDepositModal(bank_system::Bank& bank, bank_system::Account* logged_in
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.12f, 0.12f, 1.0f));
 		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			deposit_amount = 0.0;
+			funds_change_amount = 0.0;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::PopStyleColor(3);
@@ -128,11 +128,20 @@ void RenderDepositModal(bank_system::Bank& bank, bank_system::Account* logged_in
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.68f, 0.28f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
 		if (ImGui::Button("Confirm", ImVec2(120, 0))) {
-			if (deposit_amount > 0.0) {
-				logged_in_account->deposit(deposit_amount);
-				bank.save();
+			if (funds_change_amount > 0.0) {
+				if (window_name == "Deposit Funds") {
+					logged_in_account->deposit(funds_change_amount);
+					bank.save();
+				}
+				else if (window_name == "Withdraw Funds") {
+					logged_in_account->withdraw(funds_change_amount);
+					bank.save();
+				}
+				else {
+					std::cout << "Unknown fund change type!" << std::endl;
+				}
 
-				deposit_amount = 0.0; // Reset
+				funds_change_amount = 0.0; // Reset
 				ImGui::CloseCurrentPopup();
 			}
 		}
@@ -141,7 +150,6 @@ void RenderDepositModal(bank_system::Bank& bank, bank_system::Account* logged_in
 		ImGui::EndPopup();
 	}
 }
-
 
 void RenderUserTab(bank_system::Bank& bank) {
 	static bank_system::Account* logged_in_account = nullptr;
@@ -290,11 +298,13 @@ void RenderUserTab(bank_system::Bank& bank) {
 		if (ImGui::Button("Deposit")) {
 			ImGui::OpenPopup("Deposit Funds");
 		}
-		RenderDepositModal(bank, logged_in_account);
+		RenderFundsChangeModal(bank, logged_in_account, "Deposit Funds", "Enter amount to deposit :");
 
 		if (ImGui::Button("Withdraw")) {
-			
+			ImGui::OpenPopup("Withdraw Funds");
 		}
+		RenderFundsChangeModal(bank, logged_in_account, "Withdraw Funds", "Enter amount to withdraw :");
+
 		break;
 	}
 
