@@ -11,11 +11,38 @@ endif()
 
 project ("BankingAppLatest")
 
+# Automatically collect all .cpp source files inside the ImGui directory
+file(GLOB IMGUI_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ImGui/*.cpp")
+
 # Add source to this project's executable.
-add_executable (BankingAppLatest "banking_testing.h" "simple_test.h" "account.h" "account.cpp" "main.cpp"  "bank.h" "bank.cpp" "data_handler.h" "data_handler.cpp" "timer_util.h" "savings_account.h" "savings_account.cpp" "constants.h" "junior_account.h" "junior_account.cpp" "utility.h" "utility.cpp")
+add_executable (BankingAppLatest 
+	"banking_testing.h" 
+	"simple_test.h" 
+	"account.h" 
+	"account.cpp" 
+	"main.cpp"  
+	"bank.h" 
+	"bank.cpp" 
+	"data_handler.h" 
+	"data_handler.cpp" 
+	"timer_util.h" 
+	"savings_account.h" 
+	"savings_account.cpp" 
+	"constants.h" 
+	"junior_account.h" 
+	"junior_account.cpp" 
+	"utility.h" 
+	"utility.cpp"
+	${IMGUI_SOURCES}
+)
+
+target_include_directories(BankingAppLatest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ImGui")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET BankingAppLatest PROPERTY CXX_STANDARD 20)
 endif()
 
-# TODO: Add tests and install targets if needed.
+if (MSVC)
+	add_compile_options(/CMAKE_VS_JUST_MY_CODE_DEBUGGING)
+	add_compile_options(/JMC)
+endif()

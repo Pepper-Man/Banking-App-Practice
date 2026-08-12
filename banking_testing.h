@@ -13,12 +13,6 @@
 #include <vector>
 #include <cstdlib>
 
-// Comment these out to disable certain tests
-#define RUN_QUICK_TESTS
-#define RUN_LONG_TESTS
-
-#ifdef RUN_QUICK_TESTS
-
 // --- ACCOUNT LEVEL TESTS ---
 
 TEST_CASE("New account has zero balance") {
@@ -635,14 +629,12 @@ TEST_CASE("Users can filter account history by type") {
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::TransferIn).size() == 1);
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit)[1]._balance = 125);
 }
-#endif
 
 
 ///////////////////////////////////
 // More complex tests (~>10ms each)
 ///////////////////////////////////
-#ifdef RUN_LONG_TESTS
-TEST_CASE("Create, deposit to and save 1000 accounts") {
+TEST_CASE_LONG("Create, deposit to and save 1000 accounts") {
     bank_system::Bank bank;
     for (int i = 0; i < 1000; i++) {
         std::string i_str = std::to_string(i);
@@ -653,7 +645,7 @@ TEST_CASE("Create, deposit to and save 1000 accounts") {
     }
 }
 
-TEST_CASE("Bank applies interest to all accounts correctly") {
+TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
@@ -699,7 +691,7 @@ TEST_CASE("Bank applies interest to all accounts correctly") {
     REQUIRE(line_count == 2000);
 }
 
-TEST_CASE("Interest sweep mainatins data integrity on failure") {
+TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
@@ -734,7 +726,7 @@ TEST_CASE("Interest sweep mainatins data integrity on failure") {
     }
 }
 
-TEST_CASE("Bank returns account history correctly from saved file and large amount of transactions") {
+TEST_CASE_LONG("Bank returns account history correctly from saved file and large amount of transactions") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
@@ -762,7 +754,7 @@ TEST_CASE("Bank returns account history correctly from saved file and large amou
     REQUIRE(acc500->get_history().size() == 3);
 }
 
-TEST_CASE("Bank total is correct with thousands of accounts, between saves and loads") {
+TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves and loads") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
@@ -780,16 +772,4 @@ TEST_CASE("Bank total is correct with thousands of accounts, between saves and l
 
     bank_system::Bank new_bank;
     REQUIRE(new_bank.get_total_bank_balance() == 90 * num_accounts);
-}
-
-#endif
-
-void get_going() {
-#ifdef RUN_QUICK_TESTS
-    run_all_tests();
-    std::cout << "Press Enter to exit tests..." << std::endl;
-    std::cin.get();
-#else
-    bank_system::bank_ui();
-#endif
 }
