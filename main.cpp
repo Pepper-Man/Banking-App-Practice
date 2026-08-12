@@ -36,7 +36,7 @@ static void TestSQLiteConnection() {
 int main() {
 	// Need this to force windows to make the program DPI aware so the font isn't blurry
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
+	
 	// Test SQL database
 	TestSQLiteConnection();
 
@@ -136,11 +136,14 @@ static std::string GetTransactionErrorMessage(bank_system::TransactionStatus tra
 	case bank_system::TransactionStatus::SameAccount:
 		return "You are attempting to transfer to and from the same account!";
 		break;
+	default:
+		return "No Error";
+		break;
 	}
 }
 
 // Helper function for rendering the deposit/withdrawal overlay window
-void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
+static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(500, 0)); // Fixed 320px width, auto-fit height

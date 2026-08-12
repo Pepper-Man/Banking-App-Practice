@@ -217,6 +217,7 @@ TEST_CASE("Bank can transfer amounts between accounts successfully") {
         bank.transfer(userA, userB, accA_start_amount / 2.0);
     }
     catch (const std::exception& e) {
+        (void)e;
         caught_exception = true;
     }
     REQUIRE(caught_exception == false);
@@ -713,6 +714,7 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
         bank.apply_monthly_interest(interest_rate);
     }
     catch (const std::exception& e) {
+        (void)e;
         caught_exception = true;
     }
 

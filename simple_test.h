@@ -62,7 +62,7 @@ inline void run_bank_tests(bool runLongTests) {
     std::cout << "--- STARTING TEST SUITE ---" << std::endl;
     int passed_count = 0;
     const auto& tests = get_tests();
-    int total_test_count = tests.size();
+    std::size_t total_test_count = tests.size();
     for (const auto& test : tests) {
         if (test.is_long && !runLongTests) {
             total_test_count--;
