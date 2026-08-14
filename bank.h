@@ -4,6 +4,7 @@
 #include "constants.h"
 #include "data_handler.h"
 #include <memory>
+#include "SQLiteCpp/Database.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -14,8 +15,8 @@ namespace bank_system {
 
 	class Bank {
 	public:
-		// Immediately load saved account data
-		Bank() : _accounts(load()) {}
+		// Immediately load saved account data and store database ref
+		Bank(SQLite::Database& db) : _db(db), _accounts(load()) {}
 
 		// Bank-level functions
 		// True if acc created, false if username taken
@@ -50,6 +51,9 @@ namespace bank_system {
 		~Bank();
 
 	private:
+		// Store reference to database
+		SQLite::Database& _db;
+
 		// Faster to search than a simple vector; acc username is the key
 		std::unordered_map<std::string, std::unique_ptr<Account>> _accounts;
 

@@ -3,6 +3,7 @@
 #include "constants.h"
 #include <chrono>
 #include <memory>
+#include "SQLiteCpp/Database.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -28,7 +29,7 @@ namespace bank_system {
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data();
 
-	void write_account_data(std::unordered_map<std::string, std::unique_ptr<Account>>& accounts);
+	void write_account_data(SQLite::Database& db, std::unordered_map<std::string, std::unique_ptr<Account>>& accounts);
 
 	void write_transac_data(const std::vector<TransactionData>& transac_data);
 }

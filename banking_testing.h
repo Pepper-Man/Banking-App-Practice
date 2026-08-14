@@ -1,6 +1,7 @@
 #include "account.h"
 #include "bank.h"
 #include "constants.h"
+#include "database.h"
 #include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
@@ -14,6 +15,17 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+
+// Helper struct that makes an in-memory database for testing purposes
+struct TestBankContext {
+    SQLite::Database db{ ":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE };
+    bank_system::Bank bank;
+
+    TestBankContext() : bank(db) {
+        // Run your CREATE TABLE IF NOT EXISTS logic here
+        database::init_tables(db);
+    }
+};
 
 // --- ACCOUNT LEVEL TESTS ---
 
@@ -39,68 +51,68 @@ TEST_CASE("Account prevents over-withdrawal") {
 
 TEST_CASE("Bank creates multiple unique accounts") {
     bank_system::clear_saved_data();
-    bank_system::Bank bank;
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user1", "p1", "Name 1", 20) == true);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user2", "p2", "Name 2", 21) == true);
-    REQUIRE(bank.user_exists("user1") == true);
-    REQUIRE(bank.user_exists("user2") == true);
+    TestBankContext tbc;
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user1", "p1", "Name 1", 20) == true);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user2", "p2", "Name 2", 21) == true);
+    REQUIRE(tbc.bank.user_exists("user1") == true);
+    REQUIRE(tbc.bank.user_exists("user2") == true);
 }
 
 TEST_CASE("Bank blocks duplicate usernames") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "admin", "p1", "Admin One", 40);
-    bool second_attempt = bank.create_account(bank_system::AccountType::Standard, "admin", "p2", "Admin Two", 45);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "admin", "p1", "Admin One", 40);
+    bool second_attempt = tbc.bank.create_account(bank_system::AccountType::Standard, "admin", "p2", "Admin Two", 45);
     REQUIRE(second_attempt == false);
 }
 
 TEST_CASE("Login fails for non-existent user") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "real_user", "pass", "Real", 30);
-    REQUIRE(bank.login("fake_user", "pass") == nullptr);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "real_user", "pass", "Real", 30);
+    REQUIRE(tbc.bank.login("fake_user", "pass") == nullptr);
 }
 
 TEST_CASE("Login fails for correct user but wrong password") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "bob", "secret", "Bob", 30);
-    REQUIRE(bank.login("bob", "wrong_pass") == nullptr);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "bob", "secret", "Bob", 30);
+    REQUIRE(tbc.bank.login("bob", "wrong_pass") == nullptr);
 }
 
 TEST_CASE("Operations on logged-in account persist in Bank") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "saver", "pass123", "The Saver", 25);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "saver", "pass123", "The Saver", 25);
 
     // Login and get pointer
-    bank_system::Account* acc = bank.login("saver", "pass123");
+    bank_system::Account* acc = tbc.bank.login("saver", "pass123");
     REQUIRE(acc != nullptr);
 
     // Deposit money via the pointer
-    bank.deposit_to_account("saver", 500.0);
+    tbc.bank.deposit_to_account("saver", 500.0);
     REQUIRE(acc->get_balance() == 500.0);
 
     // Simulate "re-logging in" to ensure data is still there
-    bank_system::Account* re_login = bank.login("saver", "pass123");
+    bank_system::Account* re_login = tbc.bank.login("saver", "pass123");
     REQUIRE(re_login->get_balance() == 500.0);
 }
 
 TEST_CASE("Multiple accounts maintain separate balances") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Person A", 20);
-    bank_system::Account* accA = bank.login("userA", "pA");
-    bank.deposit_to_account("userA", 100.69);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Person A", 20);
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
+    tbc.bank.deposit_to_account("userA", 100.69);
 
-    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Person B", 30);
-    bank_system::Account* accB = bank.login("userB", "pB");
-    bank.deposit_to_account("userB", 250.42);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Person B", 30);
+    bank_system::Account* accB = tbc.bank.login("userB", "pB");
+    tbc.bank.deposit_to_account("userB", 250.42);
 
     REQUIRE(accA->get_balance() == 100.69);
     REQUIRE(accB->get_balance() == 250.42);
 }
 
 TEST_CASE("Saved data file is correctly cleared") {
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Person A", 20);
-    bank_system::Account* accA = bank.login("userA", "pA");
-    bank.deposit_to_account("userA", 1234.0);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Person A", 20);
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
+    tbc.bank.deposit_to_account("userA", 1234.0);
 
     // Clear
     bank_system::clear_saved_data();
@@ -115,16 +127,16 @@ TEST_CASE("Saved user data can be loaded again") {
 
     // Make bank and user in scope
     {
-        bank_system::Bank bank;
-        bank.create_account(bank_system::AccountType::Standard, "userZ", "password123", "Mr Zed", 25);
-        bank_system::Account* accZ = bank.login("userZ", "password123");
-        bank.deposit_to_account("userZ", 420.69);
+        TestBankContext tbc;
+        tbc.bank.create_account(bank_system::AccountType::Standard, "userZ", "password123", "Mr Zed", 25);
+        bank_system::Account* accZ = tbc.bank.login("userZ", "password123");
+        tbc.bank.deposit_to_account("userZ", 420.69);
     } // Bank destructor runs here, should save data to file
 
     // Open new bank, should load data file
-    bank_system::Bank new_bank;
+    TestBankContext new_tbc;
     // Log in to account that should exist
-    bank_system::Account* new_accZ = new_bank.login("userZ", "password123");
+    bank_system::Account* new_accZ = new_tbc.bank.login("userZ", "password123");
     REQUIRE(new_accZ != nullptr);
     REQUIRE(new_accZ->get_balance() == 420.69);
 }
@@ -142,9 +154,9 @@ TEST_CASE("Transactions are logged correctly") {
     bank_system::clear_transac_data();
 
     {
-        bank_system::Bank bank;
-        bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
-        bank.deposit_to_account("userA", 69.69);
+        TestBankContext tbc;
+        tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+        tbc.bank.deposit_to_account("userA", 69.69);
     }
     
     std::ifstream transac_file("transactions.log");
@@ -157,42 +169,42 @@ TEST_CASE("Transactions are logged correctly") {
 TEST_CASE("User cannot withdraw more than balance") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 29);
-    bank.deposit_to_account("userA", 200.00);
-    REQUIRE(bank.withdraw_from_account("userA", 200.01) == bank_system::TransactionStatus::InsufficientFunds);
-    REQUIRE(bank.withdraw_from_account("userA", 200.00) == bank_system::TransactionStatus::Success);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 29);
+    tbc.bank.deposit_to_account("userA", 200.00);
+    REQUIRE(tbc.bank.withdraw_from_account("userA", 200.01) == bank_system::TransactionStatus::InsufficientFunds);
+    REQUIRE(tbc.bank.withdraw_from_account("userA", 200.00) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("User cannot deposit zero or negative amount") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
-    REQUIRE(bank.deposit_to_account("userA", 0) == bank_system::TransactionStatus::InvalidAmount);
-    REQUIRE(bank.deposit_to_account("userA", 0.00) == bank_system::TransactionStatus::InvalidAmount);
-    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.deposit_to_account("userA", -200.00) == bank_system::TransactionStatus::InvalidAmount);
-    REQUIRE(bank.deposit_to_account("userA", -0) == bank_system::TransactionStatus::InvalidAmount);
-    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.deposit_to_account("userA", -0.00) == bank_system::TransactionStatus::InvalidAmount);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 0) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 0.00) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.deposit_to_account("userA", -200.00) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(tbc.bank.deposit_to_account("userA", -0) == bank_system::TransactionStatus::InvalidAmount);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.deposit_to_account("userA", -0.00) == bank_system::TransactionStatus::InvalidAmount);
 }
 
 TEST_CASE("User can change password, then log in with new password") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
 
     // Make sure change is successful
-    REQUIRE(bank.request_password_change("userA", "pA", "pZ"));
+    REQUIRE(tbc.bank.request_password_change("userA", "pA", "pZ"));
 
     // Attempt login with old password, should fail
-    bank_system::Account* acc = bank.login("userA", "pA");
+    bank_system::Account* acc = tbc.bank.login("userA", "pA");
     REQUIRE(acc == nullptr);
 
     // Attempt login with new password, should succeed
-    acc = bank.login("userA", "pZ");
+    acc = tbc.bank.login("userA", "pZ");
     REQUIRE(acc != nullptr);
 }
 
@@ -207,16 +219,16 @@ TEST_CASE("Bank can transfer amounts between accounts successfully") {
     // Set up bank and accounts
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
-    bank.create_account(bank_system::AccountType::Standard, userB, "pB", "Mr B", 30);
-    bank.deposit_to_account(userA, accA_start_amount);
-    bank.deposit_to_account(userB, accB_start_amount);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
+    tbc.bank.create_account(bank_system::AccountType::Standard, userB, "pB", "Mr B", 30);
+    tbc.bank.deposit_to_account(userA, accA_start_amount);
+    tbc.bank.deposit_to_account(userB, accB_start_amount);
 
     // Transfer should not throw
     bool caught_exception = false;
     try {
-        bank.transfer(userA, userB, accA_start_amount / 2.0);
+        tbc.bank.transfer(userA, userB, accA_start_amount / 2.0);
     }
     catch (const std::exception& e) {
         (void)e;
@@ -225,8 +237,8 @@ TEST_CASE("Bank can transfer amounts between accounts successfully") {
     REQUIRE(caught_exception == false);
 
     // Check that account values total is still the same
-    bank_system::Account* accA = bank.login(userA, "pA");
-    bank_system::Account* accB = bank.login(userB, "pB");
+    bank_system::Account* accA = tbc.bank.login(userA, "pA");
+    bank_system::Account* accB = tbc.bank.login(userB, "pB");
     REQUIRE(accA->get_balance() + accB->get_balance() == expected_total);
 }
 
@@ -241,38 +253,38 @@ TEST_CASE("Invalid transfer should fail") {
     // Set up bank and accounts
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
-    bank.create_account(bank_system::AccountType::Standard, userB, "pB", "Mr B", 30);
-    bank.deposit_to_account(userA, accA_start_amount);
-    bank.deposit_to_account(userB, accB_start_amount);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
+    tbc.bank.create_account(bank_system::AccountType::Standard, userB, "pB", "Mr B", 30);
+    tbc.bank.deposit_to_account(userA, accA_start_amount);
+    tbc.bank.deposit_to_account(userB, accB_start_amount);
 
     // Transfer should fail
     bool caught_exception = false;
-    REQUIRE(bank.transfer(userA, userB, accA_start_amount * 2.0) == bank_system::TransactionStatus::InsufficientFunds); // Too much!
+    REQUIRE(tbc.bank.transfer(userA, userB, accA_start_amount * 2.0) == bank_system::TransactionStatus::InsufficientFunds); // Too much!
 
     // Check that account values have not been altered
-    bank_system::Account* accA = bank.login(userA, "pA");
-    bank_system::Account* accB = bank.login(userB, "pB");
+    bank_system::Account* accA = tbc.bank.login(userA, "pA");
+    bank_system::Account* accB = tbc.bank.login(userB, "pB");
     REQUIRE(accA->get_balance() == accA_start_amount && accB->get_balance() == accB_start_amount);
 }
 
 TEST_CASE("Bank returns transaction history of account correctly") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 25);
-    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 30);
-    bank.deposit_to_account("userA", 100.0);
-    bank.deposit_to_account("userA", 50.0);
-    bank.deposit_to_account("userB", 120.0);
-    bank.deposit_to_account("userB", 150.0);
-    bank.deposit_to_account("userB", 30.0);
-    bank.deposit_to_account("userA", 50.0);
-    bank.deposit_to_account("userB", 150.0);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 25);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 30);
+    tbc.bank.deposit_to_account("userA", 100.0);
+    tbc.bank.deposit_to_account("userA", 50.0);
+    tbc.bank.deposit_to_account("userB", 120.0);
+    tbc.bank.deposit_to_account("userB", 150.0);
+    tbc.bank.deposit_to_account("userB", 30.0);
+    tbc.bank.deposit_to_account("userA", 50.0);
+    tbc.bank.deposit_to_account("userB", 150.0);
 
-    bank_system::Account* accA = bank.login("userA", "pA");
-    bank_system::Account* accB = bank.login("userB", "pB");
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
+    bank_system::Account* accB = tbc.bank.login("userB", "pB");
 
     REQUIRE(accA->get_history().size() == 3);
     REQUIRE(accB->get_history().size() == 4);
@@ -283,11 +295,11 @@ TEST_CASE("Savings account withdraw limit works correctly") {
 
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Savings, "userA", "pA", "Mr A", 25, withdraw_limit);
-    bank.deposit_to_account("userA", 100.0);
-    REQUIRE(bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
-    bank_system::Account* base_acc = bank.login("userA", "pA");
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Savings, "userA", "pA", "Mr A", 25, withdraw_limit);
+    tbc.bank.deposit_to_account("userA", 100.0);
+    REQUIRE(tbc.bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
+    bank_system::Account* base_acc = tbc.bank.login("userA", "pA");
     bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_acc);
     REQUIRE(savings_acc->get_balance() == 100.0);
     REQUIRE(savings_acc->withdraw(101.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
@@ -297,13 +309,13 @@ TEST_CASE("Junior account cannot exceed balance limit") {
     double balance_limit = 500.00;
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
-    REQUIRE(bank.deposit_to_account("userA", 499.00) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.deposit_to_account("userA", 1.00) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::ExceedsAccountLimit);
-    REQUIRE(bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::ExceedsAccountLimit);
-    REQUIRE(bank.withdraw_from_account("userA", 500.00) == bank_system::TransactionStatus::Success);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 499.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 1.00) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 10.00) == bank_system::TransactionStatus::ExceedsAccountLimit);
+    REQUIRE(tbc.bank.deposit_to_account("userA", 0.01) == bank_system::TransactionStatus::ExceedsAccountLimit);
+    REQUIRE(tbc.bank.withdraw_from_account("userA", 500.00) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("Account type is preserved between bank save and load") {
@@ -312,16 +324,16 @@ TEST_CASE("Account type is preserved between bank save and load") {
     
     // Create and save accounts of different types
     {
-        bank_system::Bank bank;
-        bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr Standard", 30);
-        bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr Savings", 20);
-        bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Mr Junior", 15);
+        TestBankContext tbc;
+        tbc.bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr Standard", 30);
+        tbc.bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr Savings", 20);
+        tbc.bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Mr Junior", 15);
     }
 
-    bank_system::Bank new_bank;
-    bank_system::Account* base_standard = new_bank.login("standardA", "pA");
-    bank_system::Account* base_savings = new_bank.login("savingsB", "pB");
-    bank_system::Account* base_junior = new_bank.login("juniorC", "pC");
+    TestBankContext new_tbc;
+    bank_system::Account* base_standard = new_tbc.bank.login("standardA", "pA");
+    bank_system::Account* base_savings = new_tbc.bank.login("savingsB", "pB");
+    bank_system::Account* base_junior = new_tbc.bank.login("juniorC", "pC");
 
     REQUIRE(base_standard != nullptr);
     REQUIRE(base_savings != nullptr);
@@ -338,14 +350,14 @@ TEST_CASE("Account type-specific functions and values are available after save a
 
     // Create and save accounts of different types
     {
-        bank_system::Bank bank;
-        bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr Savings", 20, 100.0, 0.0);
-        bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Mr Junior", 15, 0.0, 200.0);
+        TestBankContext tbc;
+        tbc.bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr Savings", 20, 100.0, 0.0);
+        tbc.bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Mr Junior", 15, 0.0, 200.0);
     }
 
-    bank_system::Bank new_bank;
-    bank_system::Account* base_savings = new_bank.login("savingsA", "pA");
-    bank_system::Account* base_junior = new_bank.login("juniorB", "pB");
+    TestBankContext new_tbc;
+    bank_system::Account* base_savings = new_tbc.bank.login("savingsA", "pA");
+    bank_system::Account* base_junior = new_tbc.bank.login("juniorB", "pB");
     REQUIRE(base_savings != nullptr);
     REQUIRE(base_junior != nullptr);
     bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_savings);
@@ -362,128 +374,128 @@ TEST_CASE("Account type-specific functions and values are available after save a
 TEST_CASE("Bank audit function to return accounts by type works correctly") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create two standard accounts
-    bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr StandardA", 30);
-    bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr StandardB", 35);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr StandardA", 30);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr StandardB", 35);
 
     // Create three savings accounts
-    bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr SavingsA", 25, 100.0, 0.0);
-    bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr SavingsB", 26, 110.0, 0.0);
-    bank.create_account(bank_system::AccountType::Savings, "savingsC", "pC", "Mr SavingsC", 27, 120.0, 0.0);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr SavingsA", 25, 100.0, 0.0);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr SavingsB", 26, 110.0, 0.0);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savingsC", "pC", "Mr SavingsC", 27, 120.0, 0.0);
 
     // Create four junior accounts
-    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13);
-    bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14);
-    bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15);
-    bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16);
 
     // Test vector sizes, should be same as amount of accounts of type
-    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Standard).size() == 2);
-    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Savings).size() == 3);
-    REQUIRE(bank.get_accounts_by_type(bank_system::AccountType::Junior).size() == 4);
+    REQUIRE(tbc.bank.get_accounts_by_type(bank_system::AccountType::Standard).size() == 2);
+    REQUIRE(tbc.bank.get_accounts_by_type(bank_system::AccountType::Savings).size() == 3);
+    REQUIRE(tbc.bank.get_accounts_by_type(bank_system::AccountType::Junior).size() == 4);
 }
 
 TEST_CASE("Bank audit function to check at-risk junior accounts works correctly") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create two not-at-risk juniors
-    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13, 0.0, 100.0);
-    bank.deposit_to_account("juniorA", 50.00);
-    bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14, 0.0, 150.0);
-    bank.deposit_to_account("juniorB", 100.00);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master JuniorA", 13, 0.0, 100.0);
+    tbc.bank.deposit_to_account("juniorA", 50.00);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Master JuniorB", 14, 0.0, 150.0);
+    tbc.bank.deposit_to_account("juniorB", 100.00);
 
     // Create two at-risk juniors
-    bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15, 0.0, 100.0);
-    bank.deposit_to_account("juniorC", 95.00);
-    bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16, 0.0, 150.0);
-    bank.deposit_to_account("juniorD", 140.10);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Master JuniorC", 15, 0.0, 100.0);
+    tbc.bank.deposit_to_account("juniorC", 95.00);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorD", "pD", "Master JuniorD", 16, 0.0, 150.0);
+    tbc.bank.deposit_to_account("juniorD", 140.10);
 
-    REQUIRE(bank.get_at_risk_juniors(10.00).size() == 2);
+    REQUIRE(tbc.bank.get_at_risk_juniors(10.00).size() == 2);
 }
 
 TEST_CASE("Bank audit function to find highest value user") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create some users
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
-    bank.deposit_to_account("userA", 15000000.00);
-    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
-    bank.deposit_to_account("userB", 20000000.00);
-    bank.create_account(bank_system::AccountType::Standard, "userC", "pC", "Mr C", 32);
-    bank.deposit_to_account("userC", 5000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    tbc.bank.deposit_to_account("userA", 15000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
+    tbc.bank.deposit_to_account("userB", 20000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userC", "pC", "Mr C", 32);
+    tbc.bank.deposit_to_account("userC", 5000000.00);
 
-    REQUIRE(bank.get_highest_balance_holder().first == "userB");
-    REQUIRE(bank.get_highest_balance_holder().second == 20000000.00);
+    REQUIRE(tbc.bank.get_highest_balance_holder().first == "userB");
+    REQUIRE(tbc.bank.get_highest_balance_holder().second == 20000000.00);
 }
 
 TEST_CASE("Bank total balance is correct") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create some users
-    bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr A", 30);
-    bank.deposit_to_account("standardA", 15000000.00);
-    bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr B", 31);
-    bank.deposit_to_account("standardB", 20000000.00);
-    bank.create_account(bank_system::AccountType::Standard, "standardC", "pC", "Mr C", 32);
-    bank.deposit_to_account("standardC", 5000000.00);
-    bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr A", 30, 100.0, 0.0);
-    bank.deposit_to_account("savingsA", 15000000.00);
-    bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr B", 31, 100.0, 0.0);
-    bank.deposit_to_account("savingsB", 20000000.00);
-    bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master C", 15, 0.0, 100.0);
-    bank.deposit_to_account("juniorA", 50.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr A", 30);
+    tbc.bank.deposit_to_account("standardA", 15000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standardB", "pB", "Mr B", 31);
+    tbc.bank.deposit_to_account("standardB", 20000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standardC", "pC", "Mr C", 32);
+    tbc.bank.deposit_to_account("standardC", 5000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr A", 30, 100.0, 0.0);
+    tbc.bank.deposit_to_account("savingsA", 15000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr B", 31, 100.0, 0.0);
+    tbc.bank.deposit_to_account("savingsB", 20000000.00);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "juniorA", "pA", "Master C", 15, 0.0, 100.0);
+    tbc.bank.deposit_to_account("juniorA", 50.00);
 
-    REQUIRE(bank.get_total_bank_balance() == 75000050);
+    REQUIRE(tbc.bank.get_total_bank_balance() == 75000050);
 }
 
 TEST_CASE("Bank can close accounts of all types") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
-    bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
-    bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
-    bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 100.0);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 100.0);
 
     // close_account returns true if successful
-    REQUIRE(bank.close_account("standard"));
-    REQUIRE(bank.close_account("savings"));
-    REQUIRE(bank.close_account("junior"));
+    REQUIRE(tbc.bank.close_account("standard"));
+    REQUIRE(tbc.bank.close_account("savings"));
+    REQUIRE(tbc.bank.close_account("junior"));
 
     // Shouldn't be able to log in to deleted accounts
-    REQUIRE(bank.login("standard", "pA") == nullptr);
-    REQUIRE(bank.login("savings", "pB") == nullptr);
-    REQUIRE(bank.login("junior", "pC") == nullptr);
+    REQUIRE(tbc.bank.login("standard", "pA") == nullptr);
+    REQUIRE(tbc.bank.login("savings", "pB") == nullptr);
+    REQUIRE(tbc.bank.login("junior", "pC") == nullptr);
 }
 
 TEST_CASE("Bank applies correct interest amount to different account types") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create an account of each type
-    bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
-    bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
-    bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 300.0);
-    bank.deposit_to_account("standard", 100.0);
-    bank.deposit_to_account("savings", 100.0);
-    bank.deposit_to_account("junior", 100.0);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "standard", "pA", "Mr A", 30);
+    tbc.bank.create_account(bank_system::AccountType::Savings, "savings", "pB", "Mr B", 31, 100.0, 0.0);
+    tbc.bank.create_account(bank_system::AccountType::Junior, "junior", "pC", "Mr C", 32, 0.0, 300.0);
+    tbc.bank.deposit_to_account("standard", 100.0);
+    tbc.bank.deposit_to_account("savings", 100.0);
+    tbc.bank.deposit_to_account("junior", 100.0);
 
     // Apply interest
-    bank.apply_monthly_interest(0.10); // 10% interest
+    tbc.bank.apply_monthly_interest(0.10); // 10% interest
 
     // Log in to accounts
-    bank_system::Account* standard_acc = bank.login("standard", "pA");
-    bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(bank.login("savings", "pB"));
-    bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(bank.login("junior", "pC"));
+    bank_system::Account* standard_acc = tbc.bank.login("standard", "pA");
+    bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(tbc.bank.login("savings", "pB"));
+    bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(tbc.bank.login("junior", "pC"));
     REQUIRE(standard_acc != nullptr);
     REQUIRE(savings_acc != nullptr);
     REQUIRE(junior_acc != nullptr);
@@ -497,51 +509,51 @@ TEST_CASE("Bank applies correct interest amount to different account types") {
 TEST_CASE("Account usernames are correctly validated") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username123TEST", "pA", "Mr Test", 30) == true);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user,name", "pA", "Mr Test", 30) == false);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "user name", "pA", "Mr Test", 30) == false);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, " username", "pA", "Mr Test", 30) == false);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username ", "pA", "Mr Test", 30) == false);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "us3rn4m3", "pA", "Mr Test", 30) == true);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "username!", "pA", "Mr Test", 30) == false);
-    REQUIRE(bank.create_account(bank_system::AccountType::Standard, "USERNAME", "pA", "Mr Test", 30) == true);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "username123TEST", "pA", "Mr Test", 30) == true);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user,name", "pA", "Mr Test", 30) == false);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user name", "pA", "Mr Test", 30) == false);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, " username", "pA", "Mr Test", 30) == false);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "username ", "pA", "Mr Test", 30) == false);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "us3rn4m3", "pA", "Mr Test", 30) == true);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "username!", "pA", "Mr Test", 30) == false);
+    REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "USERNAME", "pA", "Mr Test", 30) == true);
 }
 
 TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     // Create two accounts
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
-    bank.deposit_to_account("userA", 1000.0);
-    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
-    bank.deposit_to_account("userB", 250.0);
-    bank_system::Account* accA = bank.login("userA", "pA");
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    tbc.bank.deposit_to_account("userA", 1000.0);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 31);
+    tbc.bank.deposit_to_account("userB", 250.0);
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
 
     // Flag account A
-    bank.flag_account("userA");
+    tbc.bank.flag_account("userA");
     
     REQUIRE(accA->deposit(250.0) == bank_system::TransactionStatus::AccountLocked);
     REQUIRE(accA->withdraw(500.0) == bank_system::TransactionStatus::AccountLocked);
-    REQUIRE(bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::AccountLocked);
+    REQUIRE(tbc.bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::AccountLocked);
 
     // Unflag account A
-    bank.unflag_account("userA");
+    tbc.bank.unflag_account("userA");
     REQUIRE(accA->deposit(250.0) == bank_system::TransactionStatus::Success);
     REQUIRE(accA->withdraw(500.0) == bank_system::TransactionStatus::Success);
-    REQUIRE(bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.transfer("userA", "userB", 500.0) == bank_system::TransactionStatus::Success);
 }
 
 TEST_CASE("Account can return balance in other currencies") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
-    bank.deposit_to_account("userA", 100.00); // In GBP
-    bank_system::Account* acc = bank.login("userA", "pA");
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    tbc.bank.deposit_to_account("userA", 100.00); // In GBP
+    bank_system::Account* acc = tbc.bank.login("userA", "pA");
 
     // 1 penny margin
     double tolerance = 0.01;
@@ -580,24 +592,24 @@ TEST_CASE("Account can return balance in other currencies") {
 TEST_CASE("Transfer fees and limits are applied correctly") {
     bank_system::clear_saved_data();
     bank_system::clear_transac_data();
-    bank_system::Bank bank;
+    TestBankContext tbc;
 
     double userAStartingCash = 10000.00;
     double userBStartingCash = 1000.00;
 
-    bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
-    bank.deposit_to_account("userA", userAStartingCash);
-    bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 40);
-    bank.deposit_to_account("userB", userBStartingCash);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
+    tbc.bank.deposit_to_account("userA", userAStartingCash);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "Mr B", 40);
+    tbc.bank.deposit_to_account("userB", userBStartingCash);
 
     // Should fail as its over the transfer limit
-    REQUIRE(bank.transfer("userA", "userB", bank_system::TransferLimit + 0.01) == bank_system::TransactionStatus::ExceedsBankLimit);
+    REQUIRE(tbc.bank.transfer("userA", "userB", bank_system::TransferLimit + 0.01) == bank_system::TransactionStatus::ExceedsBankLimit);
 
     // Should succeed
-    REQUIRE(bank.transfer("userA", "userB", bank_system::TransferLimit) == bank_system::TransactionStatus::Success);
+    REQUIRE(tbc.bank.transfer("userA", "userB", bank_system::TransferLimit) == bank_system::TransactionStatus::Success);
 
-    bank_system::Account* accA = bank.login("userA", "pA");
-    bank_system::Account* accB = bank.login("userB", "pB");
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
+    bank_system::Account* accB = tbc.bank.login("userB", "pB");
     REQUIRE(accA->get_balance() == userAStartingCash - bank_system::TransferLimit - 0.50);
     REQUIRE(accB->get_balance() == userBStartingCash + bank_system::TransferLimit);
 }
@@ -607,23 +619,23 @@ TEST_CASE("Users can filter account history by type") {
     bank_system::clear_transac_data();
 
     {
-        bank_system::Bank bank;
-        bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "John A", 40);
+        TestBankContext tbc;
+        tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "John A", 40);
 
-        bank.deposit_to_account("userA", 50.0);
-        bank.deposit_to_account("userA", 75.0);
-        bank.deposit_to_account("userA", 25.0);
+        tbc.bank.deposit_to_account("userA", 50.0);
+        tbc.bank.deposit_to_account("userA", 75.0);
+        tbc.bank.deposit_to_account("userA", 25.0);
 
-        bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "James B", 45);
-        bank.transfer("userA", "userB", 50.0);
-        bank.transfer("userB", "userA", 25.0);
+        tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "James B", 45);
+        tbc.bank.transfer("userA", "userB", 50.0);
+        tbc.bank.transfer("userB", "userA", 25.0);
 
-        bank.withdraw_from_account("userA", 10.0);
-        bank.withdraw_from_account("userA", 5.0);
+        tbc.bank.withdraw_from_account("userA", 10.0);
+        tbc.bank.withdraw_from_account("userA", 5.0);
     }
     
-    bank_system::Bank new_bank;
-    bank_system::Account* accA = new_bank.login("userA", "pA");
+    TestBankContext new_tbc;
+    bank_system::Account* accA = new_tbc.bank.login("userA", "pA");
 
     REQUIRE(accA->get_history().size() == 7);
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit).size() == 3);
@@ -638,12 +650,12 @@ TEST_CASE("Users can filter account history by type") {
 // More complex tests (~>10ms each)
 ///////////////////////////////////
 TEST_CASE_LONG("Create, deposit to and save 1000 accounts") {
-    bank_system::Bank bank;
+    TestBankContext tbc;
     for (int i = 0; i < 1000; i++) {
         std::string i_str = std::to_string(i);
-        bank.create_account(bank_system::AccountType::Standard, "user" + i_str, "p" + i_str, "Person " + i_str, i);
-        bank_system::Account* acc = bank.login("user" + i_str, "p" + i_str);
-        bank.deposit_to_account("user" + i_str, i);
+        tbc.bank.create_account(bank_system::AccountType::Standard, "user" + i_str, "p" + i_str, "Person " + i_str, i);
+        bank_system::Account* acc = tbc.bank.login("user" + i_str, "p" + i_str);
+        tbc.bank.deposit_to_account("user" + i_str, i);
         REQUIRE(acc->get_balance() == i);
     }
 }
@@ -659,22 +671,22 @@ TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
     const double expected_balance = 105.00;
 
     {
-        bank_system::Bank bank;
+        TestBankContext tbc;
 
         // Create 1000 accounts with money
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
-            bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
-            bank.deposit_to_account(user, initial_deposit);
+            tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
+            tbc.bank.deposit_to_account(user, initial_deposit);
         }
 
         // Apply interest to all
-        bank.apply_monthly_interest(interest_rate);
+        tbc.bank.apply_monthly_interest(interest_rate);
 
         // Check a few sample users
         std::vector<std::string> test_users = { "user0", "user500", "user999" };
         for (const std::string& username : test_users) {
-            bank_system::Account* acc = bank.login(username, "pass123");
+            bank_system::Account* acc = tbc.bank.login(username, "pass123");
             REQUIRE(acc != nullptr);
             REQUIRE(acc->get_balance() == expected_balance);
         }
@@ -703,17 +715,17 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
     const double initial_deposit = 100.00;
     const double interest_rate = 500.0; // Intentionally bad interest value
 
-    bank_system::Bank bank;
+    TestBankContext tbc;
     // Create 1000 accounts with money
     for (int i = 0; i < num_accounts; i++) {
         std::string user = "user" + std::to_string(i);
-        bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
-        bank.deposit_to_account(user, initial_deposit);
+        tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
+        tbc.bank.deposit_to_account(user, initial_deposit);
     }
 
     bool caught_exception = false;
     try {
-        bank.apply_monthly_interest(interest_rate);
+        tbc.bank.apply_monthly_interest(interest_rate);
     }
     catch (const std::exception& e) {
         (void)e;
@@ -724,7 +736,7 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
     // Now check that all balances are still 100.0
     for (int i = 0; i < num_accounts; i++) {
         std::string user = "user" + std::to_string(i);
-        bank_system::Account* acc = bank.login(user, "pass123");
+        bank_system::Account* acc = tbc.bank.login(user, "pass123");
         REQUIRE(acc != nullptr);
         REQUIRE(acc->get_balance() == initial_deposit);
     }
@@ -737,24 +749,24 @@ TEST_CASE_LONG("Bank returns account history correctly from saved file and large
     int num_accounts = 1000;
 
     {
-        bank_system::Bank bank;
+        TestBankContext tbc;
         // Create 1000 accounts with money
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
-            bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
-            bank.deposit_to_account(user, 100.00);
-            bank.withdraw_from_account(user, 10.00);
+            tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
+            tbc.bank.deposit_to_account(user, 100.00);
+            tbc.bank.withdraw_from_account(user, 10.00);
         }
 
         // Bank closes, saves 2000 transactions to file
     }
 
     // Open new bank, read acc history
-    bank_system::Bank bank;
-    bank_system::Account* acc500 = bank.login("user500", "pass123");
+    TestBankContext tbc;
+    bank_system::Account* acc500 = tbc.bank.login("user500", "pass123");
     REQUIRE(acc500 != nullptr);
     REQUIRE(acc500->get_history().size() == 2);
-    bank.deposit_to_account("user500", 12.00);
+    tbc.bank.deposit_to_account("user500", 12.00);
     REQUIRE(acc500->get_history().size() == 3);
 }
 
@@ -765,17 +777,17 @@ TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves 
     int num_accounts = 2000;
 
     {
-        bank_system::Bank bank;
+        TestBankContext tbc;
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
-            bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
-            bank.deposit_to_account(user, 100.00);
-            bank.withdraw_from_account(user, 10.00);
+            tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
+            tbc.bank.deposit_to_account(user, 100.00);
+            tbc.bank.withdraw_from_account(user, 10.00);
         }
     }
 
-    bank_system::Bank new_bank;
-    REQUIRE(new_bank.get_total_bank_balance() == 90 * num_accounts);
+    TestBankContext new_tbc;
+    REQUIRE(new_tbc.bank.get_total_bank_balance() == 90 * num_accounts);
 }
 
 TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {

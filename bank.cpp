@@ -1,6 +1,7 @@
 #include "account.h"
 #include "bank.h"
 #include "constants.h"
+#include "database.h"
 #include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
@@ -36,6 +37,9 @@ namespace bank_system {
 			new_acc = std::make_unique<Account>(user, pass, name, age);
 			break;
 		}
+
+		// Insert new user account into the database
+		database::save_user(_db, *new_acc);
 
 		_accounts[user] = std::move(new_acc);
 		return true;
@@ -307,7 +311,7 @@ namespace bank_system {
 	}
 
 	void Bank::save() {
-		write_account_data(_accounts);
+		write_account_data(_db, _accounts);
 	}
 
 	void Bank::log_transac(Account* acc, TransactionType type, double amount) {

@@ -1,9 +1,11 @@
 #include "account.h"
 #include "bank.h"
 #include "constants.h"
+#include "database.h"
 #include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
+#include "SQLiteCpp/Database.h"
 #include <chrono>
 #include <fstream>
 #include <ios>
@@ -79,20 +81,14 @@ namespace bank_system {
 		return accounts;
 	}
 
-	void write_account_data(std::unordered_map<std::string, std::unique_ptr<Account>>& accounts) {
-		std::ofstream data_file("data.csv");
-
-		if (!data_file.is_open()) {
-			throw std::runtime_error("Failed to open user data file!");
-		}
-
+	void write_account_data(SQLite::Database& db, std::unordered_map<std::string, std::unique_ptr<Account>>& accounts) {
 		for (const auto& [username, acc] : accounts) {
-			data_file << acc->get_username() << ",";
-			data_file << acc->get_psw_hash() << ",";
-			data_file << acc->get_leg_name() << ",";
-			data_file << acc->get_age() << ",";
-			data_file << acc->get_balance() << ",";
 
+			if (acc) {
+				database::save_user(db, *acc);
+			}
+			
+			/*
 			// Handle extra account data
 			bank_system::AccountType type = acc->get_type();
 			data_file << type;
@@ -118,9 +114,8 @@ namespace bank_system {
 			}
 
 			data_file << "\n";
+			*/
 		}
-
-		data_file.close();
 	}
 
 	void write_transac_data(const std::vector<TransactionData>& transac_data) {

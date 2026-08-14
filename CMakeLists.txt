@@ -34,7 +34,7 @@ add_executable (BankingAppLatest
 	"utility.h" 
 	"utility.cpp"
 	${IMGUI_SOURCES}
-)
+ "database.cpp" "database.h")
 
 target_include_directories(BankingAppLatest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ImGui")
 
