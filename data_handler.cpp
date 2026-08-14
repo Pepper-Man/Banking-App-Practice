@@ -18,9 +18,13 @@
 #include <vector>
 
 namespace bank_system {
-	void clear_saved_data() {
-		std::ofstream file("data.csv");
-		file.close();
+	void clear_database(SQLite::Database& db, bank_system::Bank& bank) {
+		// Clear database
+		db.exec("DELETE FROM accounts;"); // Delete all accounts (schema tells it to delete all associated transactions too)
+		db.exec("DELETE FROM sqlite_sequence;"); // Resets autoincrement counters so new IDs start back at 1
+
+		// Clear memory
+		bank.clear_memory();
 	}
 
 	void clear_transac_data() {

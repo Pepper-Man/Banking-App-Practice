@@ -50,7 +50,6 @@ TEST_CASE("Account prevents over-withdrawal") {
 // --- BANK LEVEL TESTS ---
 
 TEST_CASE("Bank creates multiple unique accounts") {
-    bank_system::clear_saved_data();
     TestBankContext tbc;
     REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user1", "p1", "Name 1", 20) == true);
     REQUIRE(tbc.bank.create_account(bank_system::AccountType::Standard, "user2", "p2", "Name 2", 21) == true);
@@ -114,17 +113,11 @@ TEST_CASE("Saved data file is correctly cleared") {
     bank_system::Account* accA = tbc.bank.login("userA", "pA");
     tbc.bank.deposit_to_account("userA", 1234.0);
 
-    // Clear
-    bank_system::clear_saved_data();
-
     // Test
     REQUIRE(bank_system::read_account_data().empty());
 }
 
 TEST_CASE("Saved user data can be loaded again") {
-    // Ensure no stale data
-    bank_system::clear_saved_data();
-
     // Make bank and user in scope
     {
         TestBankContext tbc;
@@ -150,7 +143,6 @@ TEST_CASE("Transactions are cleared correctly") {
 }
 
 TEST_CASE("Transactions are logged correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     {
@@ -167,7 +159,6 @@ TEST_CASE("Transactions are logged correctly") {
 }
 
 TEST_CASE("User cannot withdraw more than balance") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 29);
@@ -177,7 +168,6 @@ TEST_CASE("User cannot withdraw more than balance") {
 }
 
 TEST_CASE("User cannot deposit zero or negative amount") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
@@ -191,7 +181,6 @@ TEST_CASE("User cannot deposit zero or negative amount") {
 }
 
 TEST_CASE("User can change password, then log in with new password") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 31);
@@ -217,7 +206,6 @@ TEST_CASE("Bank can transfer amounts between accounts successfully") {
     double expected_total = accA_start_amount + accB_start_amount - bank_system::TransferFee;
 
     // Set up bank and accounts
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
@@ -251,7 +239,6 @@ TEST_CASE("Invalid transfer should fail") {
     double expected_total = accA_start_amount + accB_start_amount;
 
     // Set up bank and accounts
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, userA, "pA", "Mr A", 25);
@@ -270,7 +257,6 @@ TEST_CASE("Invalid transfer should fail") {
 }
 
 TEST_CASE("Bank returns transaction history of account correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 25);
@@ -292,10 +278,9 @@ TEST_CASE("Bank returns transaction history of account correctly") {
 
 TEST_CASE("Savings account withdraw limit works correctly") {
     double withdraw_limit = 100.0;
-
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
+
     tbc.bank.create_account(bank_system::AccountType::Savings, "userA", "pA", "Mr A", 25, withdraw_limit);
     tbc.bank.deposit_to_account("userA", 100.0);
     REQUIRE(tbc.bank.withdraw_from_account("userA", 500.0) == bank_system::TransactionStatus::ExceedsAccountLimit);
@@ -307,9 +292,9 @@ TEST_CASE("Savings account withdraw limit works correctly") {
 
 TEST_CASE("Junior account cannot exceed balance limit") {
     double balance_limit = 500.00;
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
+
     tbc.bank.create_account(bank_system::AccountType::Junior, "userA", "pA", "Mr A", 25, 0.0, balance_limit);
     REQUIRE(tbc.bank.deposit_to_account("userA", 499.00) == bank_system::TransactionStatus::Success);
     REQUIRE(tbc.bank.deposit_to_account("userA", 1.00) == bank_system::TransactionStatus::Success);
@@ -319,7 +304,6 @@ TEST_CASE("Junior account cannot exceed balance limit") {
 }
 
 TEST_CASE("Account type is preserved between bank save and load") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     
     // Create and save accounts of different types
@@ -345,7 +329,6 @@ TEST_CASE("Account type is preserved between bank save and load") {
 }
 
 TEST_CASE("Account type-specific functions and values are available after save and load") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     // Create and save accounts of different types
@@ -372,7 +355,6 @@ TEST_CASE("Account type-specific functions and values are available after save a
 }
 
 TEST_CASE("Bank audit function to return accounts by type works correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -398,7 +380,6 @@ TEST_CASE("Bank audit function to return accounts by type works correctly") {
 }
 
 TEST_CASE("Bank audit function to check at-risk junior accounts works correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -418,7 +399,6 @@ TEST_CASE("Bank audit function to check at-risk junior accounts works correctly"
 }
 
 TEST_CASE("Bank audit function to find highest value user") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -435,7 +415,6 @@ TEST_CASE("Bank audit function to find highest value user") {
 }
 
 TEST_CASE("Bank total balance is correct") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -457,7 +436,6 @@ TEST_CASE("Bank total balance is correct") {
 }
 
 TEST_CASE("Bank can close accounts of all types") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -477,7 +455,6 @@ TEST_CASE("Bank can close accounts of all types") {
 }
 
 TEST_CASE("Bank applies correct interest amount to different account types") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -507,7 +484,6 @@ TEST_CASE("Bank applies correct interest amount to different account types") {
 }
 
 TEST_CASE("Account usernames are correctly validated") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -522,7 +498,6 @@ TEST_CASE("Account usernames are correctly validated") {
 }
 
 TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -548,7 +523,6 @@ TEST_CASE("Ensure that flagged accounts are limited until they are un-flagged") 
 }
 
 TEST_CASE("Account can return balance in other currencies") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
     tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
@@ -590,7 +564,6 @@ TEST_CASE("Account can return balance in other currencies") {
 }
 
 TEST_CASE("Transfer fees and limits are applied correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
     TestBankContext tbc;
 
@@ -615,7 +588,6 @@ TEST_CASE("Transfer fees and limits are applied correctly") {
 }
 
 TEST_CASE("Users can filter account history by type") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     {
@@ -661,7 +633,6 @@ TEST_CASE_LONG("Create, deposit to and save 1000 accounts") {
 }
 
 TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     // Test vars
@@ -707,7 +678,6 @@ TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
 }
 
 TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     // Test vars
@@ -743,7 +713,6 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
 }
 
 TEST_CASE_LONG("Bank returns account history correctly from saved file and large amount of transactions") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     int num_accounts = 1000;
@@ -771,7 +740,6 @@ TEST_CASE_LONG("Bank returns account history correctly from saved file and large
 }
 
 TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves and loads") {
-    bank_system::clear_saved_data();
     bank_system::clear_transac_data();
 
     int num_accounts = 2000;
@@ -798,6 +766,7 @@ TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {
         opened_successfully = true;
     }
     catch (const std::exception& e) {
+        (void)e;
         opened_successfully = false;
     }
     

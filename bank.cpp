@@ -122,6 +122,10 @@ namespace bank_system {
 		return true;
 	}
 
+	void Bank::clear_memory() {
+		_accounts.clear();
+	}
+
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
 		std::vector<Account*> found;
 
@@ -321,10 +325,10 @@ namespace bank_system {
 			int type_raw = load_query.getColumn("account_type").getInt();
 			double balance = load_query.getColumn("balance").getDouble();
 
+			// Instantiate correct class based on type_raw value
 			bank_system::AccountType type = static_cast<bank_system::AccountType>(type_raw);
 			std::unique_ptr<bank_system::Account> acc;
 
-			// Instantiate correct class based on account_type value
 			if (type == bank_system::AccountType::Savings) {
 				double limit = load_query.getColumn("acc_limit").getDouble();
 				acc = std::make_unique<bank_system::SavingsAccount>(username, password, real_name, age, limit, type);
@@ -348,6 +352,7 @@ namespace bank_system {
 		}
 
 		// On bank load, we read all transactions and set the history for each account
+		// TODO: Fix getting acc history once we have the transactions table working
 		//get_all_acc_history();
 		return accounts;
 	}

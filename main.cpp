@@ -18,7 +18,7 @@
 // Forward declaration for tab renderers
 void RenderBankTestsTab();
 void RenderUserTab(bank_system::Bank& bank);
-void RenderAdminTab();
+void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank);
 
 int main() {
 	// Need this to force windows to make the program DPI aware so the font isn't blurry
@@ -63,7 +63,7 @@ int main() {
 			}
 
 			if (ImGui::BeginTabItem("Admin")) {
-				RenderAdminTab();
+				RenderAdminTab(db, bank);
 				ImGui::EndTabItem();
 			}
 
@@ -97,9 +97,9 @@ void RenderBankTestsTab() {
 	}
 }
 
-void RenderAdminTab() {
+void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE ALL USER DATA")) {
-		bank_system::clear_saved_data();
+		bank_system::clear_database(db, bank);
 		bank_system::clear_transac_data();
 	}
 }
