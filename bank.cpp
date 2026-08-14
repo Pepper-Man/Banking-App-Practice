@@ -6,6 +6,7 @@
 #include "junior_account.h"
 #include "savings_account.h"
 #include "SQLiteCpp/Statement.h"
+#include "SQLiteCpp/Transaction.h"
 #include <chrono>
 #include <exception>
 #include <fstream>
@@ -308,57 +309,14 @@ namespace bank_system {
 		}
 	}
 
-	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
-		std::unordered_map<std::string, std::unique_ptr<Account>> accounts;
-
-		SQLite::Statement load_query(_db,
-			"SELECT username, password, real_name, age, account_type, balance, acc_limit "
-			"FROM accounts"
-		);
-
-		// executeStep() return true for each row
-		while (load_query.executeStep()) {
-			std::string username = load_query.getColumn("username").getText();
-			std::string password = load_query.getColumn("password").getText();
-			std::string real_name = load_query.getColumn("real_name").getText();
-			int age = load_query.getColumn("age").getInt();
-			int type_raw = load_query.getColumn("account_type").getInt();
-			double balance = load_query.getColumn("balance").getDouble();
-
-			// Instantiate correct class based on type_raw value
-			bank_system::AccountType type = static_cast<bank_system::AccountType>(type_raw);
-			std::unique_ptr<bank_system::Account> acc;
-
-			if (type == bank_system::AccountType::Savings) {
-				double limit = load_query.getColumn("acc_limit").getDouble();
-				acc = std::make_unique<bank_system::SavingsAccount>(username, password, real_name, age, limit, type);
-			}
-			else if (type == bank_system::AccountType::Junior) {
-				double limit = load_query.getColumn("acc_limit").getDouble();
-				acc = std::make_unique<bank_system::JuniorAccount>(username, password, real_name, age, limit, type);
-			}
-			else {
-				acc = std::make_unique<bank_system::Account>(username, password, real_name, age);
-			}
-
-			// Set the old password hash (the account construcor hashed it a second time, cba to write a specific hydration constructor)
-			acc->set_psw_hash(password);
-
-			// Restore balance
-			acc->set_balance(balance);
-
-			// Insert acc into memory accounts map
-			accounts[username] = std::move(acc);
-		}
-
-		// On bank load, we read all transactions and set the history for each account
-		// TODO: Fix getting acc history once we have the transactions table working
-		//get_all_acc_history();
-		return accounts;
+	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() const {
+		return bank_system::read_account_data(_db);
 	}
 
 	void Bank::save() {
+		SQLite::Transaction transaction(_db);
 		write_account_data(_db, _accounts);
+		transaction.commit();
 	}
 
 	void Bank::log_transac(Account* acc, TransactionType type, double amount) {

@@ -2,6 +2,7 @@
 
 #include "account.h"
 #include "constants.h"
+#include "database.h"
 #include "data_handler.h"
 #include <memory>
 #include "SQLiteCpp/Database.h"
@@ -16,7 +17,10 @@ namespace bank_system {
 	class Bank {
 	public:
 		// Immediately load saved account data and store database ref
-		Bank(SQLite::Database& db) : _db(db), _accounts(load()) {}
+		Bank(SQLite::Database& db) : _db(db) {
+			database::init_tables(_db);
+			_accounts = load();
+		}
 
 		// Bank-level functions
 		// True if acc created, false if username taken
@@ -45,7 +49,7 @@ namespace bank_system {
 		TransactionStatus transfer(const std::string& from_user, const std::string& to_user, double amount);
 
 		// Saved account data load+save
-		std::unordered_map<std::string, std::unique_ptr<Account>> load();
+		std::unordered_map<std::string, std::unique_ptr<Account>> load() const;
 		void save();
 
 		// Destructor

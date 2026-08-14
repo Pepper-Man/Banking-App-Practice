@@ -12,18 +12,24 @@
 #include <iostream>
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <SQLiteCpp/Transaction.h>
 #include <string>
 #include <vector>
 #include <cstdlib>
 
-// Helper struct that makes an in-memory database for testing purposes
+// Creates an in-memory database for testing purposes
 struct TestBankContext {
-    SQLite::Database db{ ":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE };
+    SQLite::Database db;
     bank_system::Bank bank;
 
-    TestBankContext() : bank(db) {
-        // Run your CREATE TABLE IF NOT EXISTS logic here
-        database::init_tables(db);
+    TestBankContext(const std::string& db_file = ":memory:")
+        : db(db_file, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE), bank(db) 
+    {
+        if (db_file != ":memory:") {
+            // Make SQLite hold writes in RAM cache during tests
+            db.exec("PRAGMA synchronous = OFF;");
+            db.exec("PRAGMA journal_mode = MEMORY;");
+        }
     }
 };
 
@@ -113,25 +119,37 @@ TEST_CASE("Saved data file is correctly cleared") {
     bank_system::Account* accA = tbc.bank.login("userA", "pA");
     tbc.bank.deposit_to_account("userA", 1234.0);
 
+    tbc.bank.save();
+
     // Test
-    REQUIRE(bank_system::read_account_data().empty());
+    bank_system::clear_database(tbc.db, tbc.bank);
+    REQUIRE(bank_system::read_account_data(tbc.db).empty());
 }
 
 TEST_CASE("Saved user data can be loaded again") {
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str()); // Clear before starting
+
     // Make bank and user in scope
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
         tbc.bank.create_account(bank_system::AccountType::Standard, "userZ", "password123", "Mr Zed", 25);
         bank_system::Account* accZ = tbc.bank.login("userZ", "password123");
         tbc.bank.deposit_to_account("userZ", 420.69);
-    } // Bank destructor runs here, should save data to file
+        tbc.bank.save();
+    }
 
-    // Open new bank, should load data file
-    TestBankContext new_tbc;
-    // Log in to account that should exist
-    bank_system::Account* new_accZ = new_tbc.bank.login("userZ", "password123");
-    REQUIRE(new_accZ != nullptr);
-    REQUIRE(new_accZ->get_balance() == 420.69);
+    {
+        // Open new bank, should load data file
+        TestBankContext new_tbc(test_db);
+        REQUIRE(new_tbc.bank.user_exists("userZ") == true);
+        // Log in to account that should exist
+        bank_system::Account* new_accZ = new_tbc.bank.login("userZ", "password123");
+        REQUIRE(new_accZ != nullptr);
+        REQUIRE(new_accZ->get_balance() == 420.69);
+    }
+    
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE("Transactions are cleared correctly") {
@@ -304,54 +322,64 @@ TEST_CASE("Junior account cannot exceed balance limit") {
 }
 
 TEST_CASE("Account type is preserved between bank save and load") {
-    bank_system::clear_transac_data();
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
     
     // Create and save accounts of different types
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
         tbc.bank.create_account(bank_system::AccountType::Standard, "standardA", "pA", "Mr Standard", 30);
         tbc.bank.create_account(bank_system::AccountType::Savings, "savingsB", "pB", "Mr Savings", 20);
         tbc.bank.create_account(bank_system::AccountType::Junior, "juniorC", "pC", "Mr Junior", 15);
     }
 
-    TestBankContext new_tbc;
-    bank_system::Account* base_standard = new_tbc.bank.login("standardA", "pA");
-    bank_system::Account* base_savings = new_tbc.bank.login("savingsB", "pB");
-    bank_system::Account* base_junior = new_tbc.bank.login("juniorC", "pC");
+    {
+        TestBankContext new_tbc(test_db);
+        bank_system::Account* base_standard = new_tbc.bank.login("standardA", "pA");
+        bank_system::Account* base_savings = new_tbc.bank.login("savingsB", "pB");
+        bank_system::Account* base_junior = new_tbc.bank.login("juniorC", "pC");
 
-    REQUIRE(base_standard != nullptr);
-    REQUIRE(base_savings != nullptr);
-    REQUIRE(base_junior != nullptr);
+        REQUIRE(base_standard != nullptr);
+        REQUIRE(base_savings != nullptr);
+        REQUIRE(base_junior != nullptr);
 
-    REQUIRE(base_standard->get_type() == bank_system::AccountType::Standard);
-    REQUIRE(base_savings->get_type() == bank_system::AccountType::Savings);
-    REQUIRE(base_junior->get_type() == bank_system::AccountType::Junior);
+        REQUIRE(base_standard->get_type() == bank_system::AccountType::Standard);
+        REQUIRE(base_savings->get_type() == bank_system::AccountType::Savings);
+        REQUIRE(base_junior->get_type() == bank_system::AccountType::Junior);
+    }
+    
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE("Account type-specific functions and values are available after save and load") {
-    bank_system::clear_transac_data();
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
 
     // Create and save accounts of different types
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
         tbc.bank.create_account(bank_system::AccountType::Savings, "savingsA", "pA", "Mr Savings", 20, 100.0, 0.0);
         tbc.bank.create_account(bank_system::AccountType::Junior, "juniorB", "pB", "Mr Junior", 15, 0.0, 200.0);
     }
 
-    TestBankContext new_tbc;
-    bank_system::Account* base_savings = new_tbc.bank.login("savingsA", "pA");
-    bank_system::Account* base_junior = new_tbc.bank.login("juniorB", "pB");
-    REQUIRE(base_savings != nullptr);
-    REQUIRE(base_junior != nullptr);
-    bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_savings);
-    bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(base_junior);
+    {
+        TestBankContext new_tbc(test_db);
+        bank_system::Account* base_savings = new_tbc.bank.login("savingsA", "pA");
+        bank_system::Account* base_junior = new_tbc.bank.login("juniorB", "pB");
+        REQUIRE(base_savings != nullptr);
+        REQUIRE(base_junior != nullptr);
+        bank_system::SavingsAccount* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(base_savings);
+        bank_system::JuniorAccount* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(base_junior);
 
-    REQUIRE(savings_acc != nullptr);
-    REQUIRE(junior_acc != nullptr);
+        REQUIRE(savings_acc != nullptr);
+        REQUIRE(junior_acc != nullptr);
 
-    // These getter functions are unique to their respective account child type
-    REQUIRE(savings_acc->get_withdraw_limit() == 100.0);
-    REQUIRE(junior_acc->get_balance_limit() == 200.0);
+        // These getter functions are unique to their respective account child type
+        REQUIRE(savings_acc->get_withdraw_limit() == 100.0);
+        REQUIRE(junior_acc->get_balance_limit() == 200.0);
+    }
+
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE("Bank audit function to return accounts by type works correctly") {
@@ -590,24 +618,21 @@ TEST_CASE("Transfer fees and limits are applied correctly") {
 TEST_CASE("Users can filter account history by type") {
     bank_system::clear_transac_data();
 
-    {
-        TestBankContext tbc;
-        tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "John A", 40);
+    TestBankContext tbc;
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "John A", 40);
 
-        tbc.bank.deposit_to_account("userA", 50.0);
-        tbc.bank.deposit_to_account("userA", 75.0);
-        tbc.bank.deposit_to_account("userA", 25.0);
+    tbc.bank.deposit_to_account("userA", 50.0);
+    tbc.bank.deposit_to_account("userA", 75.0);
+    tbc.bank.deposit_to_account("userA", 25.0);
 
-        tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "James B", 45);
-        tbc.bank.transfer("userA", "userB", 50.0);
-        tbc.bank.transfer("userB", "userA", 25.0);
+    tbc.bank.create_account(bank_system::AccountType::Standard, "userB", "pB", "James B", 45);
+    tbc.bank.transfer("userA", "userB", 50.0);
+    tbc.bank.transfer("userB", "userA", 25.0);
 
-        tbc.bank.withdraw_from_account("userA", 10.0);
-        tbc.bank.withdraw_from_account("userA", 5.0);
-    }
+    tbc.bank.withdraw_from_account("userA", 10.0);
+    tbc.bank.withdraw_from_account("userA", 5.0);
     
-    TestBankContext new_tbc;
-    bank_system::Account* accA = new_tbc.bank.login("userA", "pA");
+    bank_system::Account* accA = tbc.bank.login("userA", "pA");
 
     REQUIRE(accA->get_history().size() == 7);
     REQUIRE(accA->get_history_by_type(bank_system::TransactionType::Deposit).size() == 3);
@@ -713,12 +738,18 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
 }
 
 TEST_CASE_LONG("Bank returns account history correctly from saved file and large amount of transactions") {
-    bank_system::clear_transac_data();
+    // TODO: Check that this works after implementing the transaction table stuff in the db
+
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
 
     int num_accounts = 1000;
 
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
+
+        SQLite::Transaction txn(tbc.db);
+
         // Create 1000 accounts with money
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
@@ -727,35 +758,50 @@ TEST_CASE_LONG("Bank returns account history correctly from saved file and large
             tbc.bank.withdraw_from_account(user, 10.00);
         }
 
-        // Bank closes, saves 2000 transactions to file
+        txn.commit();
     }
 
     // Open new bank, read acc history
-    TestBankContext tbc;
-    bank_system::Account* acc500 = tbc.bank.login("user500", "pass123");
-    REQUIRE(acc500 != nullptr);
-    REQUIRE(acc500->get_history().size() == 2);
-    tbc.bank.deposit_to_account("user500", 12.00);
-    REQUIRE(acc500->get_history().size() == 3);
+    {
+        TestBankContext tbc(test_db);
+        bank_system::Account* acc500 = tbc.bank.login("user500", "pass123");
+        REQUIRE(acc500 != nullptr);
+        REQUIRE(acc500->get_history().size() == 2);
+        tbc.bank.deposit_to_account("user500", 12.00);
+        REQUIRE(acc500->get_history().size() == 3);
+
+    }
+    
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves and loads") {
-    bank_system::clear_transac_data();
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
 
     int num_accounts = 2000;
 
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
+
+        SQLite::Transaction txn(tbc.db);
+
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
             tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
             tbc.bank.deposit_to_account(user, 100.00);
             tbc.bank.withdraw_from_account(user, 10.00);
         }
-    }
 
-    TestBankContext new_tbc;
-    REQUIRE(new_tbc.bank.get_total_bank_balance() == 90 * num_accounts);
+        txn.commit();
+    }
+    
+    {
+        TestBankContext new_tbc(test_db);
+        REQUIRE(new_tbc.bank.get_total_bank_balance() == 90 * num_accounts);
+    }
+    
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {

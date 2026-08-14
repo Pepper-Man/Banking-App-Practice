@@ -32,93 +32,60 @@ namespace bank_system {
 		file.close();
 	}
 
-	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data() {
+	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data(const SQLite::Database& db) {
 		std::unordered_map<std::string, std::unique_ptr<Account>> accounts;
-		std::string acc_str;
-		std::ifstream data_file("data.csv");
 
-		while (std::getline(data_file, acc_str)) {
-			if (acc_str.empty()) continue; // Skip empty lines
+		SQLite::Statement load_query(db,
+			"SELECT username, password, real_name, age, account_type, balance, acc_limit "
+			"FROM accounts"
+		);
 
-			// Split csv line into parts
-			std::vector<std::string> acc_data;
-			std::istringstream ss(acc_str);
-			std::string part;
-			while (std::getline(ss, part, ',')) {
-				acc_data.push_back(part);
+		// executeStep() return true for each row
+		while (load_query.executeStep()) {
+			std::string username = load_query.getColumn("username").getText();
+			std::string password = load_query.getColumn("password").getText();
+			std::string real_name = load_query.getColumn("real_name").getText();
+			int age = load_query.getColumn("age").getInt();
+			int type_raw = load_query.getColumn("account_type").getInt();
+			double balance = load_query.getColumn("balance").getDouble();
+
+			// Instantiate correct class based on type_raw value
+			bank_system::AccountType type = static_cast<bank_system::AccountType>(type_raw);
+			std::unique_ptr<bank_system::Account> acc;
+
+			if (type == bank_system::AccountType::Savings) {
+				double limit = load_query.getColumn("acc_limit").getDouble();
+				acc = std::make_unique<bank_system::SavingsAccount>(username, password, real_name, age, limit, type);
+			}
+			else if (type == bank_system::AccountType::Junior) {
+				double limit = load_query.getColumn("acc_limit").getDouble();
+				acc = std::make_unique<bank_system::JuniorAccount>(username, password, real_name, age, limit, type);
+			}
+			else {
+				acc = std::make_unique<bank_system::Account>(username, password, real_name, age);
 			}
 
-			// Now read parts and create acc
-			std::string username = acc_data[0];
-			std::string pass_hash = acc_data[1];
-			std::string legal_name = acc_data[2];
-			int age = std::stoi(acc_data[3]);
-			double balance = std::stod(acc_data[4]);
-			bank_system::AccountType type = static_cast<bank_system::AccountType>(std::stoi(acc_data[5])); // account type, converted to int then converted to enum
-			std::unique_ptr<Account> acc;
+			// Set the old password hash (the account construcor hashed it a second time, cba to write a specific hydration constructor)
+			acc->set_psw_hash(password);
 
-			switch (type) {
-			// Extra braces to calm compiler about the var declaration
-			case bank_system::Savings:
-				{
-				double w_limit = std::stod(acc_data[6]);
-				acc = std::make_unique<SavingsAccount>(username, pass_hash, legal_name, age, balance, w_limit, bank_system::AccountType::Savings);
-				}
-				
-				break;
-			case bank_system::Junior:
-				{
-				double b_limit = std::stod(acc_data[6]);
-				acc = std::make_unique<JuniorAccount>(username, pass_hash, legal_name, age, balance, b_limit, bank_system::AccountType::Junior);
-				}
-				
-				break;
+			// Restore balance
+			acc->set_balance(balance);
 
-			default:
-				acc = std::make_unique<Account>(username, pass_hash, legal_name, age, balance, bank_system::AccountType::Standard);
-			}
-
-			accounts.try_emplace(username, std::move(acc));
+			// Insert acc into memory accounts map
+			accounts[username] = std::move(acc);
 		}
 
-		data_file.close();
+		// On bank load, we read all transactions and set the history for each account
+		// TODO: Fix getting acc history once we have the transactions table working
+		//get_all_acc_history();
 		return accounts;
 	}
 
 	void write_account_data(SQLite::Database& db, std::unordered_map<std::string, std::unique_ptr<Account>>& accounts) {
 		for (const auto& [username, acc] : accounts) {
-
 			if (acc) {
 				database::save_user(db, *acc);
 			}
-			
-			/*
-			// Handle extra account data
-			bank_system::AccountType type = acc->get_type();
-			data_file << type;
-
-			switch (type) {
-			// In these cases we cast to specific acc type so we can access its extra data
-			// Also it is wrapped in braces so the compiler doesnt get iffy about the variable declaration
-			case bank_system::AccountType::Savings:
-				{
-					auto* savings_acc = dynamic_cast<bank_system::SavingsAccount*>(acc.get());
-					if (savings_acc) data_file << "," << savings_acc->get_withdraw_limit();
-				}
-				
-				break;
-			case bank_system::AccountType::Junior:
-				{
-					auto* junior_acc = dynamic_cast<bank_system::JuniorAccount*>(acc.get());
-					if (junior_acc) data_file << "," << junior_acc->get_balance_limit();
-				}
-				break;
-			default:
-				break;
-			}
-
-			data_file << "\n";
-			*/
 		}
 	}
 
