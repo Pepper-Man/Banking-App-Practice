@@ -77,6 +77,10 @@ namespace bank_system {
 		_flagged = val;
 	}
 
+	void Account::set_psw_hash(const std::string& hash) {
+		_password_hash = hash;
+	}
+
 	bool Account::check_password(std::string password) const {
 		return psw_hash(password) == _password_hash;
 	}

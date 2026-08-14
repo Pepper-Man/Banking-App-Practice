@@ -27,6 +27,7 @@ namespace bank_system {
 		// Setters
 		void set_balance(double new_balance);
 		void set_flagged(bool val);
+		void set_psw_hash(const std::string& hash);
 		
 		// Other
 		bool check_password(std::string password) const;
