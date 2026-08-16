@@ -100,7 +100,8 @@ namespace bank_system {
 			bank_system::TransactionType type = string_to_transac_type(load_query.getColumn("type").getText());
 			double amount = load_query.getColumn("amount").getDouble();
 			double balance = load_query.getColumn("balance").getDouble();
-			std::chrono::system_clock::time_point time = std::chrono::system_clock::from_time_t(load_query.getColumn("time").getInt());
+			time_t raw_time = static_cast<time_t>(load_query.getColumn("time").getInt64());
+			std::chrono::system_clock::time_point time = std::chrono::system_clock::from_time_t(raw_time);
 
 			bank_system::TransactionData transac_data = { username, type, amount, balance, time };
 			all_transaction_data.push_back(transac_data);
