@@ -20,6 +20,7 @@ namespace bank_system {
 		Bank(SQLite::Database& db) : _db(db) {
 			database::init_tables(_db);
 			_accounts = load();
+			get_all_acc_history();
 		}
 
 		// Bank-level functions

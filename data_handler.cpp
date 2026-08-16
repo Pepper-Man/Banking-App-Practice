@@ -76,9 +76,6 @@ namespace bank_system {
 			accounts[username] = std::move(acc);
 		}
 
-		// On bank load, we read all transactions and set the history for each account
-		// TODO: Fix getting acc history once we have the transactions table working
-		//get_all_acc_history();
 		return accounts;
 	}
 
@@ -90,27 +87,31 @@ namespace bank_system {
 		}
 	}
 
+	std::vector<bank_system::TransactionData> read_transac_data(const SQLite::Database& db) {
+		std::vector<bank_system::TransactionData> all_transaction_data{};
+
+		SQLite::Statement load_query(db,
+			"SELECT username, type, amount, balance, time "
+			"FROM transactions"
+		);
+
+		while (load_query.executeStep()) {
+			std::string username = load_query.getColumn("username").getText();
+			bank_system::TransactionType type = string_to_transac_type(load_query.getColumn("type").getText());
+			double amount = load_query.getColumn("amount").getDouble();
+			double balance = load_query.getColumn("balance").getDouble();
+			std::chrono::system_clock::time_point time = std::chrono::system_clock::from_time_t(load_query.getColumn("time").getInt());
+
+			bank_system::TransactionData transac_data = { username, type, amount, balance, time };
+			all_transaction_data.push_back(transac_data);
+		}
+
+		return all_transaction_data;
+	}
+
 	void write_transac_data(SQLite::Database& db, const std::vector<TransactionData>& transac_data) {
 		for (const auto& transaction : transac_data) {
 			database::save_transaction(db, transaction);
 		}
-
-		/*
-		std::ofstream audit_file("transactions.log", std::ios_base::app);
-
-		if (!audit_file.is_open()) {
-			throw std::runtime_error("Failed to open transaction log file!");
-		}
-
-		for (const TransactionData& transaction : transac_data) {
-			audit_file << transaction._username << ",";
-			audit_file << transac_type_to_string(transaction._type) << ",";
-			audit_file << transaction._amount << ",";
-			audit_file << transaction._balance << ",";
-			audit_file << std::chrono::system_clock::to_time_t(transaction._time);
-			audit_file << "\n";
-		}
-		audit_file.close();
-		*/
 	}
 }

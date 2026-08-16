@@ -294,18 +294,13 @@ namespace bank_system {
 	}
 
 	void Bank::get_all_acc_history() {
-		// Read past from file
-		std::ifstream transac_file("transactions.log");
-		std::string transaction_line;
-		while (getline(transac_file, transaction_line)) {
-			if (transaction_line.empty()) continue;
+		// Read past from database
+		std::vector<bank_system::TransactionData> all_transaction_data = bank_system::read_transac_data(_db);
 
-			std::vector<std::string> split_line = utility::split_csv_line(transaction_line);
-			
-			auto it = _accounts.find(split_line[0]);
+		for (const bank_system::TransactionData& transac_data : all_transaction_data) {
+			auto it = _accounts.find(transac_data._username);
 			if (it != _accounts.end()) {
-				TransactionData transacData = { split_line[0], string_to_transac_type(split_line[1]), std::stod(split_line[2]), std::stod(split_line[3]), std::chrono::system_clock::now()};
-				it->second->add_to_history(transacData);
+				it->second->add_to_history(transac_data);
 			}
 		}
 	}
