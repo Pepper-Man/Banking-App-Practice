@@ -12,6 +12,7 @@
 #include <iostream>
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <SQLiteCpp/Statement.h>
 #include <SQLiteCpp/Transaction.h>
 #include <string>
 #include <vector>
@@ -161,19 +162,26 @@ TEST_CASE("Transactions are cleared correctly") {
 }
 
 TEST_CASE("Transactions are logged correctly") {
-    bank_system::clear_transac_data();
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
 
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
         tbc.bank.create_account(bank_system::AccountType::Standard, "userA", "pA", "Mr A", 30);
         tbc.bank.deposit_to_account("userA", 69.69);
-    }
+    } // Exiting scope triggers bank destructor, which flushes transaction buffer to database
     
-    std::ifstream transac_file("transactions.log");
-    REQUIRE(transac_file.is_open());
-    std::string first_line;
-    std::getline(transac_file, first_line);
-    REQUIRE(first_line.find("userA,Deposit,69.69,69.69") != std::string::npos);
+    SQLite::Database db(test_db, SQLite::OPEN_READONLY);
+    SQLite::Statement query(db, "SELECT username, type, amount, balance FROM transactions WHERE username = ?");
+    query.bind(1, "userA");
+
+    REQUIRE(query.executeStep());
+    REQUIRE(std::string(query.getColumn("username").getText()) == "userA");
+    REQUIRE(std::string(query.getColumn("type").getText()) == "Deposit");
+    REQUIRE(query.getColumn("amount").getDouble() == 69.69);
+    REQUIRE(query.getColumn("balance").getDouble() == 69.69);
+
+    std::remove(test_db.c_str());
 }
 
 TEST_CASE("User cannot withdraw more than balance") {
@@ -658,7 +666,8 @@ TEST_CASE_LONG("Create, deposit to and save 1000 accounts") {
 }
 
 TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
-    bank_system::clear_transac_data();
+    const std::string test_db = "test_persistence.db";
+    std::remove(test_db.c_str());
 
     // Test vars
     const int num_accounts = 1000;
@@ -667,7 +676,7 @@ TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
     const double expected_balance = 105.00;
 
     {
-        TestBankContext tbc;
+        TestBankContext tbc(test_db);
 
         // Create 1000 accounts with money
         for (int i = 0; i < num_accounts; i++) {
@@ -689,17 +698,10 @@ TEST_CASE_LONG("Bank applies interest to all accounts correctly") {
     }
 
     // Check logging
-    std::ifstream log_file("transactions.log");
-    REQUIRE(log_file.is_open());
-
-    int line_count = 0;
-    std::string dummy;
-    while (std::getline(log_file, dummy)) {
-        line_count++;
-    }
-
-    // Should be 1000 deposit log lines and 1000 interest log lines
-    REQUIRE(line_count == 2000);
+    SQLite::Database db(test_db, SQLite::OPEN_READONLY);
+    SQLite::Statement query(db, "SELECT COUNT(*) FROM transactions");
+    REQUIRE(query.executeStep());
+    REQUIRE(query.getColumn(0).getInt() == 2000); // 1000 deposit logs and 1000 interest logs
 }
 
 TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
