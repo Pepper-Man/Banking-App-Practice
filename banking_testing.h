@@ -18,6 +18,28 @@
 #include <vector>
 #include <cstdlib>
 
+/*
+------------------------- TESTING INFO --------------------------
+
+- Normal testing should be done by creating a TestBankContext with no string supplied. This creates
+  an IN-MEMORY database, simplifying the writing of tests (no need to worry about cleaning up afterwards
+  with std::remove() or similar, and keeps test speed high as its in RAM rather than on disk.
+
+- Tests that specifically need to check persistence (e.g database integrity between program runs) should
+  create a TestBankContext specifying a name string (e.g. TestBankContext tbc("persistent_db")). This
+  creates a physical .db file on disk. These tests should run std::remove(test_db_name.c_str()) at the
+  START AND END of the test to ensure the database is both empty and gets cleaned up afterwards to ensure
+  tests do not interfere with each other.
+
+- TEST_CASE denotes a standard test, with no special testing context
+
+- TEST_CASE_LONG denotes a test that is expected to take significantly longer than others (>100 ms)
+
+- TEST_CASE_DATABASE denotes a test that specifically tests database initialisation and management
+
+-----------------------------------------------------------------
+*/
+
 // Creates an in-memory database for testing purposes
 struct TestBankContext {
     SQLite::Database db;
@@ -808,6 +830,8 @@ TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves 
 
 TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {
     bool opened_successfully = false;
+    const std::string db_name = "test.db";
+    std::remove(db_name.c_str());
 
     try {
         SQLite::Database db("test.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
@@ -819,4 +843,6 @@ TEST_CASE_DATABASE("Creating/Opening test database file doesn't fail") {
     }
     
     REQUIRE(opened_successfully == true);
+
+    std::remove(db_name.c_str());
 }
