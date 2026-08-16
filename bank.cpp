@@ -10,6 +10,7 @@
 #include <chrono>
 #include <exception>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -328,10 +329,15 @@ namespace bank_system {
 	}
 
 	Bank::~Bank() {
-		// Save accounts
-		save();
+		try {
+			// Save accounts
+			save();
 
-		// Save transactions
-		write_transac_data(_transaction_buffer);
+			// Save transactions
+			write_transac_data(_db, _transaction_buffer);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Error during Bank destruction: " << e.what() << std::endl;
+		}
 	}
 }

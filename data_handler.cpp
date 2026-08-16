@@ -6,6 +6,7 @@
 #include "junior_account.h"
 #include "savings_account.h"
 #include "SQLiteCpp/Database.h"
+#include "SQLiteCpp/Statement.h"
 #include <chrono>
 #include <fstream>
 #include <ios>
@@ -89,7 +90,12 @@ namespace bank_system {
 		}
 	}
 
-	void write_transac_data(const std::vector<TransactionData>& transac_data) {
+	void write_transac_data(SQLite::Database& db, const std::vector<TransactionData>& transac_data) {
+		for (const auto& transaction : transac_data) {
+			database::save_transaction(db, transaction);
+		}
+
+		/*
 		std::ofstream audit_file("transactions.log", std::ios_base::app);
 
 		if (!audit_file.is_open()) {
@@ -105,5 +111,6 @@ namespace bank_system {
 			audit_file << "\n";
 		}
 		audit_file.close();
+		*/
 	}
 }

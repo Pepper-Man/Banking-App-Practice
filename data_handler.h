@@ -32,5 +32,5 @@ namespace bank_system {
 
 	void write_account_data(SQLite::Database& db, std::unordered_map<std::string, std::unique_ptr<Account>>& accounts);
 
-	void write_transac_data(const std::vector<TransactionData>& transac_data);
+	void write_transac_data(SQLite::Database& db, const std::vector<TransactionData>& transac_data);
 }

@@ -1,6 +1,8 @@
 #include "account.h"
+#include <chrono>
 #include "constants.h"
 #include "database.h"
+#include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
 #include <SQLiteCpp/Database.h>
@@ -29,10 +31,12 @@ namespace database {
 		db.exec(R"(
 			CREATE TABLE IF NOT EXISTS transactions (
 				id			INTEGER PRIMARY KEY AUTOINCREMENT,
-				account_id	INTEGER NOT NULL,
-				type		INTEGER NOT NULL,
+				username	TEXT NOT NULL,
+				type		TEXT NOT NULL,
 				amount		REAL NOT NULL,
-				FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+				balance		REAL NOT NULL,
+				time		INTEGER NOT NULL,
+				FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE ON UPDATE CASCADE
 			);
 		)");
 	}
@@ -81,5 +85,20 @@ namespace database {
 		delete_query.bind(1, account.get_username());
 
 		delete_query.exec();
+	}
+
+	void save_transaction(SQLite::Database& db, const bank_system::TransactionData& transaction) {
+		SQLite::Statement transaction_query(db,
+			"INSERT INTO transactions (username, type, amount, balance, time) "
+			"VALUES (?, ?, ?, ?, ?) "
+		);
+
+		transaction_query.bind(1, transaction._username);
+		transaction_query.bind(2, transac_type_to_string(transaction._type));
+		transaction_query.bind(3, transaction._amount);
+		transaction_query.bind(4, transaction._balance);
+		transaction_query.bind(5, std::chrono::system_clock::to_time_t(transaction._time));
+
+		transaction_query.exec();
 	}
 }

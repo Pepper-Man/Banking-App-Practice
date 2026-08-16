@@ -182,10 +182,10 @@ static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account
 				
 
 				if (window_name == "Deposit Funds") {
-					transaction_status = logged_in_account->deposit(funds_change_amount);
+					transaction_status = bank.deposit_to_account(logged_in_account->get_username(), funds_change_amount);
 				}
 				else if (window_name == "Withdraw Funds") {
-					transaction_status = logged_in_account->withdraw(funds_change_amount);
+					transaction_status = bank.withdraw_from_account(logged_in_account->get_username(), funds_change_amount);
 				}
 				else {
 					std::cout << "Unknown fund change type!" << std::endl;
