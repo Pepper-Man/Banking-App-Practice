@@ -2,7 +2,6 @@
 #include "bank.h"
 #include "constants.h"
 #include "database.h"
-#include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
 #include "simple_test.h"
@@ -145,8 +144,8 @@ TEST_CASE("Saved data file is correctly cleared") {
     tbc.bank.save();
 
     // Test
-    bank_system::clear_database(tbc.db, tbc.bank);
-    REQUIRE(bank_system::read_account_data(tbc.db).empty());
+    database::clear_database(tbc.db, tbc.bank);
+    REQUIRE(database::read_account_data(tbc.db).empty());
 }
 
 TEST_CASE("Saved user data can be loaded again") {
@@ -184,7 +183,7 @@ TEST_CASE("Transactions are cleared correctly") {
     tbc.bank.withdraw_from_account("userA", 50.00);
 
     // Clear transaction data from memory + database
-    bank_system::clear_transac_data(tbc.db, tbc.bank);
+    database::clear_transac_data(tbc.db, tbc.bank);
 
     // Confirm database transactions are empty
     SQLite::Statement count_query(tbc.db, "SELECT COUNT(*) FROM transactions");

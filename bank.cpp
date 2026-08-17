@@ -2,7 +2,6 @@
 #include "bank.h"
 #include "constants.h"
 #include "database.h"
-#include "data_handler.h"
 #include "junior_account.h"
 #include "savings_account.h"
 #include "SQLiteCpp/Statement.h"
@@ -14,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include "transaction.h"
 #include <unordered_map>
 #include <utility>
 #include <cctype>
@@ -303,7 +303,7 @@ namespace bank_system {
 
 	void Bank::get_all_acc_history() {
 		// Read past from database
-		std::vector<bank_system::TransactionData> all_transaction_data = bank_system::read_transac_data(_db);
+		std::vector<bank_system::TransactionData> all_transaction_data = database::read_transac_data(_db);
 
 		for (const bank_system::TransactionData& transac_data : all_transaction_data) {
 			auto it = _accounts.find(transac_data._username);
@@ -314,12 +314,12 @@ namespace bank_system {
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() const {
-		return bank_system::read_account_data(_db);
+		return database::read_account_data(_db);
 	}
 
 	void Bank::save() {
 		SQLite::Transaction transaction(_db);
-		write_account_data(_db, _accounts);
+		database::write_account_data(_db, _accounts);
 		transaction.commit();
 	}
 
@@ -337,7 +337,7 @@ namespace bank_system {
 			save();
 
 			// Save transactions
-			write_transac_data(_db, _transaction_buffer);
+			database::write_transac_data(_db, _transaction_buffer);
 		}
 		catch (const std::exception& e) {
 			std::cerr << "Error during Bank destruction: " << e.what() << std::endl;

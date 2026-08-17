@@ -3,7 +3,6 @@
 #include "account.h"
 #include "constants.h"
 #include "database.h"
-#include "data_handler.h"
 #include <memory>
 #include "SQLiteCpp/Database.h"
 #include <string>

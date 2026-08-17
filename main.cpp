@@ -3,7 +3,6 @@
 #include "banking_testing.h"
 #include "constants.h"
 #include "database.h"
-#include "data_handler.h"
 #include <exception>
 #include "imgui.h"
 #include "ImGui/imgui_stdlib.h"
@@ -99,12 +98,12 @@ void RenderBankTestsTab() {
 
 void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE ALL USER DATA")) {
-		bank_system::clear_database(db, bank);
-		bank_system::clear_transac_data(db, bank);
+		database::clear_database(db, bank);
+		database::clear_transac_data(db, bank);
 	}
 
 	if (ImGui::Button("DELETE TRANSACTIONS ONLY")) {
-		bank_system::clear_transac_data(db, bank);
+		database::clear_transac_data(db, bank);
 	}
 }
 

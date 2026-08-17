@@ -23,8 +23,8 @@ add_executable (BankingAppLatest
 	"main.cpp"  
 	"bank.h" 
 	"bank.cpp" 
-	"data_handler.h" 
-	"data_handler.cpp" 
+	 
+	 
 	"timer_util.h" 
 	"savings_account.h" 
 	"savings_account.cpp" 
@@ -34,7 +34,7 @@ add_executable (BankingAppLatest
 	"utility.h" 
 	"utility.cpp"
 	${IMGUI_SOURCES}
- "database.cpp" "database.h")
+ "database.cpp" "database.h" "transaction.h")
 
 target_include_directories(BankingAppLatest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ImGui")
 
