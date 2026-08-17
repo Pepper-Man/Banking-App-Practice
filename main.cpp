@@ -100,7 +100,11 @@ void RenderBankTestsTab() {
 void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE ALL USER DATA")) {
 		bank_system::clear_database(db, bank);
-		bank_system::clear_transac_data();
+		bank_system::clear_transac_data(db, bank);
+	}
+
+	if (ImGui::Button("DELETE TRANSACTIONS ONLY")) {
+		bank_system::clear_transac_data(db, bank);
 	}
 }
 

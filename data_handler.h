@@ -26,7 +26,7 @@ namespace bank_system {
 	};
 
 	void clear_database(SQLite::Database& db, bank_system::Bank& bank);
-	void clear_transac_data();
+	void clear_transac_data(SQLite::Database& db, bank_system::Bank& bank);
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data(const SQLite::Database& db);
 

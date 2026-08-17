@@ -126,6 +126,7 @@ namespace bank_system {
 
 	void Bank::clear_memory() {
 		_accounts.clear();
+		_transaction_buffer.clear();
 	}
 
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
