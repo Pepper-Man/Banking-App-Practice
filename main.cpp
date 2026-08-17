@@ -3,7 +3,6 @@
 #include "banking_testing.h"
 #include "constants.h"
 #include "database.h"
-#include <exception>
 #include "imgui.h"
 #include "ImGui/imgui_stdlib.h"
 #include "GuiManager.h"
@@ -22,6 +21,9 @@ void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank);
 int main() {
 	// Need this to force windows to make the program DPI aware so the font isn't blurry
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+	// Init tests
+	bank_system::init_account_tests();
 	
 	// Init database
 	SQLite::Database db("bank.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);

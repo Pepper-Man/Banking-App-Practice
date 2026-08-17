@@ -6,9 +6,10 @@
 #include <memory>
 #include "SQLiteCpp/Database.h"
 #include <string>
+#include "transaction.h"
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace bank_system {
 	class JuniorAccount;

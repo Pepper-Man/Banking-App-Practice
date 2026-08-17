@@ -7,12 +7,8 @@
 #include "simple_test.h"
 #include <cstdio>
 #include <exception>
-#include <fstream>
-#include <iostream>
 #include <SQLiteCpp/Database.h>
-#include <SQLiteCpp/SQLiteCpp.h>
 #include <SQLiteCpp/Statement.h>
-#include <SQLiteCpp/Transaction.h>
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -38,6 +34,10 @@
 
 -----------------------------------------------------------------
 */
+
+namespace bank_system {
+    void init_account_tests() {}
+}
 
 // Creates an in-memory database for testing purposes
 struct TestBankContext {

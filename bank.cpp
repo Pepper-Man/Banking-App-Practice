@@ -4,11 +4,9 @@
 #include "database.h"
 #include "junior_account.h"
 #include "savings_account.h"
-#include "SQLiteCpp/Statement.h"
 #include "SQLiteCpp/Transaction.h"
 #include <chrono>
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -18,7 +16,6 @@
 #include <utility>
 #include <cctype>
 #include <vector>
-#include "utility.h"
 
 namespace bank_system {
 	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit, double b_limit) {

@@ -8,7 +8,6 @@
 #include "savings_account.h"
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Statement.h>
-#include <SQLiteCpp/SQLiteCpp.h>
 #include <string>
 #include "transaction.h"
 #include <unordered_map>
