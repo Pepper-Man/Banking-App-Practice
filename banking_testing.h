@@ -754,8 +754,6 @@ TEST_CASE_LONG("Interest sweep mainatins data integrity on failure") {
 }
 
 TEST_CASE_LONG("Bank returns account history correctly from saved file and large amount of transactions") {
-    // TODO: Check that this works after implementing the transaction table stuff in the db
-
     const std::string test_db = "test_persistence.db";
     std::remove(test_db.c_str());
 
@@ -764,8 +762,6 @@ TEST_CASE_LONG("Bank returns account history correctly from saved file and large
     {
         TestBankContext tbc(test_db);
 
-        SQLite::Transaction txn(tbc.db);
-
         // Create 1000 accounts with money
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
@@ -773,8 +769,6 @@ TEST_CASE_LONG("Bank returns account history correctly from saved file and large
             tbc.bank.deposit_to_account(user, 100.00);
             tbc.bank.withdraw_from_account(user, 10.00);
         }
-
-        txn.commit();
     }
 
     // Open new bank, read acc history
