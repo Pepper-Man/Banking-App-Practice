@@ -794,16 +794,12 @@ TEST_CASE_LONG("Bank total is correct with thousands of accounts, between saves 
     {
         TestBankContext tbc(test_db);
 
-        SQLite::Transaction txn(tbc.db);
-
         for (int i = 0; i < num_accounts; i++) {
             std::string user = "user" + std::to_string(i);
             tbc.bank.create_account(bank_system::AccountType::Standard, user, "pass123", "Full Name", 30);
             tbc.bank.deposit_to_account(user, 100.00);
             tbc.bank.withdraw_from_account(user, 10.00);
         }
-
-        txn.commit();
     }
     
     {
