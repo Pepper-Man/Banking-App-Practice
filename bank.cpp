@@ -124,9 +124,16 @@ namespace bank_system {
 		return true;
 	}
 
-	void Bank::clear_memory() {
+	void Bank::clear_accounts_memory() {
 		_accounts.clear();
+	}
+
+	void Bank::clear_transactions_memory() {
 		_transaction_buffer.clear();
+
+		for (auto& [username, acc] : _accounts) {
+			acc->clear_history();
+		}
 	}
 
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {

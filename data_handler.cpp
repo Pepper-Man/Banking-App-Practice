@@ -24,13 +24,14 @@ namespace bank_system {
 		db.exec("DELETE FROM accounts;"); // Delete all accounts (schema tells it to delete all associated transactions too)
 		db.exec("DELETE FROM sqlite_sequence;"); // Resets autoincrement counters so new IDs start back at 1
 
-		// Clear memory
-		bank.clear_memory();
+		// Clear accounts and transactions
+		bank.clear_accounts_memory();
+		bank.clear_transactions_memory();
 	}
 
 	void clear_transac_data(SQLite::Database& db, bank_system::Bank& bank) {
 		db.exec("DELETE FROM transactions");
-		bank.clear_memory();
+		bank.clear_transactions_memory();
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<Account>> read_account_data(const SQLite::Database& db) {

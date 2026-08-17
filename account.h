@@ -35,6 +35,7 @@ namespace bank_system {
 		virtual TransactionStatus withdraw(double amount);
 		bool change_password(const std::string& old_password, const std::string& new_password);
 		void add_to_history(const TransactionData& transaction);
+		void clear_history();
 
 	private:
 		std::string psw_hash(const std::string& password) const;

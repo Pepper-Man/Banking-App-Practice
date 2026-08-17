@@ -27,6 +27,10 @@ namespace bank_system {
 		_history.push_back(transaction);
 	}
 
+	void Account::clear_history() {
+		_history.clear();
+	}
+
 	double Account::get_balance() const {
 		return _balance;
 	}
