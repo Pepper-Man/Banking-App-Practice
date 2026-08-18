@@ -219,19 +219,50 @@ static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account
 }
 
 static void RenderTransactionsTable(const bank_system::Account& acc) {
+	const auto& history = acc.get_history();
+	if (history.empty()) {
+		ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No transaction history found.");
+		return;
+	}
+
 	std::size_t columns = 4; // type, amount, balance, time
 
-	if (ImGui::BeginTable("transactionstable", columns)) {
-		for (const bank_system::TransactionData& transaction : acc.get_history()) {
+	constexpr ImGuiTableFlags table_flags =
+		ImGuiTableFlags_BordersInnerH |
+		ImGuiTableFlags_BordersOuter |
+		ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_Resizable |
+		ImGuiTableFlags_PadOuterX;
+
+	if (ImGui::BeginTable("transactionstable", columns, table_flags)) {
+		// Column headers
+		ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+		ImGui::TableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+		ImGui::TableSetupColumn("Balance", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+		ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableHeadersRow();
+
+		// History data
+		for (auto it = history.rbegin(); it != history.rend(); it++) {
+			const bank_system::TransactionData& transaction = *it;
+
 			ImGui::TableNextRow();
+
+			std::string type_str = bank_system::transac_type_to_string(transaction._type);
 
 			// Type
 			ImGui::TableNextColumn();
-			ImGui::Text(bank_system::transac_type_to_string(transaction._type).c_str());
+			ImGui::Text(type_str.c_str());
 			
-			// Amount
+			// Amount (green incoming, red outgoing)
 			ImGui::TableNextColumn();
-			ImGui::Text("£%.2f", transaction._amount);
+			bool is_deposit = (type_str.find("Deposit") != std::string::npos || type_str.find("Transfer In") != std::string::npos);
+
+			ImVec4 amount_color = is_deposit
+				? ImVec4(0.35f, 0.85f, 0.35f, 1.0f)   // Soft green
+				: ImVec4(0.90f, 0.40f, 0.40f, 1.0f);  // Soft red
+
+			ImGui::TextColored(amount_color, "%s£%.2f", is_deposit ? "+" : "-", transaction._amount);
 
 			// Balance
 			ImGui::TableNextColumn();
