@@ -1,7 +1,9 @@
 #include "account.h"
 #include "bank.h"
 #include "banking_testing.h"
+#include <chrono>
 #include "constants.h"
+#include <ctime>
 #include "database.h"
 #include "imgui.h"
 #include "ImGui/imgui_stdlib.h"
@@ -11,6 +13,7 @@
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <string>
+#include "transaction.h"
 #include "Windows.h"
 
 // Forward declaration for tab renderers
@@ -215,6 +218,39 @@ static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account
 	}
 }
 
+static void RenderTransactionsTable(const bank_system::Account& acc) {
+	std::size_t columns = 4; // type, amount, balance, time
+
+	if (ImGui::BeginTable("transactionstable", columns)) {
+		for (const bank_system::TransactionData& transaction : acc.get_history()) {
+			ImGui::TableNextRow();
+
+			// Type
+			ImGui::TableNextColumn();
+			ImGui::Text(bank_system::transac_type_to_string(transaction._type).c_str());
+			
+			// Amount
+			ImGui::TableNextColumn();
+			ImGui::Text("£%.2f", transaction._amount);
+
+			// Balance
+			ImGui::TableNextColumn();
+			ImGui::Text("£%.2f", transaction._balance);
+			
+			// Time
+			ImGui::TableNextColumn();
+			std::time_t raw_time = std::chrono::system_clock::to_time_t(transaction._time);
+			std::tm local_time{};
+			localtime_s(&local_time, &raw_time);
+			char time_buffer[32];
+			std::strftime(time_buffer, sizeof(time_buffer), "%d/%m/%Y %H:%M:%S", &local_time);
+			ImGui::Text(time_buffer);
+		}
+
+		ImGui::EndTable();
+	}
+}
+
 void RenderUserTab(bank_system::Bank& bank) {
 	static bank_system::Account* logged_in_account = nullptr;
 	static bool logged_in = false;
@@ -360,6 +396,8 @@ void RenderUserTab(bank_system::Bank& bank) {
 
 		static double acc_balance = 0.00;
 		static bool has_fetched_balance = false;
+		static bool show_transactions = false;
+		static std::string show_transaction_button_text = "Show Transactions";
 
 		ImGui::Text("User: %s", logged_in_account->get_username().c_str());
 		ImGui::Text("Full Name: %s", logged_in_account->get_leg_name().c_str());
@@ -383,6 +421,21 @@ void RenderUserTab(bank_system::Bank& bank) {
 			ImGui::OpenPopup("Withdraw Funds");
 		}
 		RenderFundsChangeModal(bank, logged_in_account, "Withdraw Funds", "Enter amount to withdraw:");
+
+		if (ImGui::Button(show_transaction_button_text.c_str())) {
+			if (show_transactions) {
+				show_transactions = false;
+				show_transaction_button_text = "Show Transactions";
+			}
+			else {
+				show_transactions = true;
+				show_transaction_button_text = "Hide Transactions";
+			}
+		}
+
+		if (show_transactions) {
+			RenderTransactionsTable(*logged_in_account);
+		}
 
 		break;
 	}
