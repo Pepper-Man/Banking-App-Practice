@@ -35,7 +35,7 @@ namespace bank_system {
 		
 		// Admin/audit functions
 		void clear_accounts_memory();
-		void clear_transactions_memory();
+		void clear_database_transactions_from_memory();
 		std::vector<Account*> get_accounts_by_type(AccountType type) const;
 		std::vector<JuniorAccount*> get_at_risk_juniors(double tolerance) const; // "At risk" is defined as being within the tolerance value of the balance limit
 		std::pair<std::string, double> get_highest_balance_holder() const;

@@ -125,7 +125,7 @@ namespace bank_system {
 		_accounts.clear();
 	}
 
-	void Bank::clear_transactions_memory() {
+	void Bank::clear_database_transactions_from_memory() {
 		_transaction_buffer.clear();
 
 		for (auto& [username, acc] : _accounts) {
@@ -317,6 +317,8 @@ namespace bank_system {
 	void Bank::save() {
 		SQLite::Transaction transaction(_db);
 		database::write_account_data(_db, _accounts);
+		database::write_transac_data(_db, _transaction_buffer);
+		_transaction_buffer.clear();
 		transaction.commit();
 	}
 
@@ -332,9 +334,6 @@ namespace bank_system {
 		try {
 			// Save accounts
 			save();
-
-			// Save transactions
-			database::write_transac_data(_db, _transaction_buffer);
 		}
 		catch (const std::exception& e) {
 			std::cerr << "Error during Bank destruction: " << e.what() << std::endl;

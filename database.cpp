@@ -56,12 +56,13 @@ namespace database {
 
 		// Clear accounts and transactions
 		bank.clear_accounts_memory();
-		bank.clear_transactions_memory();
+		bank.clear_database_transactions_from_memory();
 	}
 
 	void clear_transac_data(SQLite::Database& db, bank_system::Bank& bank) {
 		db.exec("DELETE FROM transactions");
-		bank.clear_transactions_memory();
+		db.exec("DELETE FROM sqlite_sequence WHERE name = 'transactions';");
+		bank.clear_database_transactions_from_memory();
 	}
 
 	// Single entity operations
