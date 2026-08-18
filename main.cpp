@@ -222,13 +222,29 @@ void RenderUserTab(bank_system::Bank& bank) {
 	static UserSubView activeView = UserSubView::None;
 
 	ImGui::PushID("User Home Page Scope");
-	if (ImGui::Button("Create Account")) {
-		activeView = UserSubView::CreateAccount;
+
+	if (!logged_in) {
+		if (ImGui::Button("Create Account")) {
+			activeView = UserSubView::CreateAccount;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Log In")) {
+			activeView = UserSubView::LogIn;
+		}
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("Log In")) {
-		activeView = UserSubView::LogIn;
+	else {
+		ImGui::Text("Logged in as %s", logged_in_account->get_username().c_str());
+		ImGui::SameLine();
+
+		// Log out button and state reset
+		if (ImGui::Button("Log Out")) {
+			logged_in_account = nullptr;
+			logged_in = false;
+			log_in_failed = false;
+			activeView = UserSubView::LogIn;
+		}
 	}
+	
 	ImGui::PopID();
 
 	ImGui::Separator();
