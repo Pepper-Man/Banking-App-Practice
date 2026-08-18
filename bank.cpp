@@ -1,20 +1,21 @@
 #include "account.h"
 #include "bank.h"
 #include "constants.h"
-#include "data_handler.h"
+#include "database.h"
 #include "junior_account.h"
 #include "savings_account.h"
+#include "SQLiteCpp/Transaction.h"
 #include <chrono>
 #include <exception>
-#include <fstream>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include "transaction.h"
 #include <unordered_map>
 #include <utility>
 #include <cctype>
 #include <vector>
-#include "utility.h"
 
 namespace bank_system {
 	bool Bank::create_account(AccountType type, std::string user, std::string pass, std::string name, int age, double w_limit, double b_limit) {
@@ -36,6 +37,9 @@ namespace bank_system {
 			new_acc = std::make_unique<Account>(user, pass, name, age);
 			break;
 		}
+
+		// Insert new user account into the database
+		database::save_user(_db, *new_acc);
 
 		_accounts[user] = std::move(new_acc);
 		return true;
@@ -115,6 +119,18 @@ namespace bank_system {
 			if (!std::isalnum(static_cast<unsigned char>(c))) return false;
 		}
 		return true;
+	}
+
+	void Bank::clear_accounts_memory() {
+		_accounts.clear();
+	}
+
+	void Bank::clear_transactions_memory() {
+		_transaction_buffer.clear();
+
+		for (auto& [username, acc] : _accounts) {
+			acc->clear_history();
+		}
 	}
 
 	std::vector<Account*> Bank::get_accounts_by_type(AccountType type) const {
@@ -283,31 +299,25 @@ namespace bank_system {
 	}
 
 	void Bank::get_all_acc_history() {
-		// Read past from file
-		std::ifstream transac_file("transactions.log");
-		std::string transaction_line;
-		while (getline(transac_file, transaction_line)) {
-			if (transaction_line.empty()) continue;
+		// Read past from database
+		std::vector<bank_system::TransactionData> all_transaction_data = database::read_transac_data(_db);
 
-			std::vector<std::string> split_line = utility::split_csv_line(transaction_line);
-			
-			auto it = _accounts.find(split_line[0]);
+		for (const bank_system::TransactionData& transac_data : all_transaction_data) {
+			auto it = _accounts.find(transac_data._username);
 			if (it != _accounts.end()) {
-				TransactionData transacData = { split_line[0], string_to_transac_type(split_line[1]), std::stod(split_line[2]), std::stod(split_line[3]), std::chrono::system_clock::now()};
-				it->second->add_to_history(transacData);
+				it->second->add_to_history(transac_data);
 			}
 		}
 	}
 
-	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() {
-		auto all_acc_data = read_account_data();
-		// On bank load, we read all transactions and set the history for each account
-		get_all_acc_history();
-		return all_acc_data;
+	std::unordered_map<std::string, std::unique_ptr<Account>> Bank::load() const {
+		return database::read_account_data(_db);
 	}
 
 	void Bank::save() {
-		write_account_data(_accounts);
+		SQLite::Transaction transaction(_db);
+		database::write_account_data(_db, _accounts);
+		transaction.commit();
 	}
 
 	void Bank::log_transac(Account* acc, TransactionType type, double amount) {
@@ -319,10 +329,15 @@ namespace bank_system {
 	}
 
 	Bank::~Bank() {
-		// Save accounts
-		save();
+		try {
+			// Save accounts
+			save();
 
-		// Save transactions
-		write_transac_data(_transaction_buffer);
+			// Save transactions
+			database::write_transac_data(_db, _transaction_buffer);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Error during Bank destruction: " << e.what() << std::endl;
+		}
 	}
 }

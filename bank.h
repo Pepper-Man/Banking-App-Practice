@@ -2,20 +2,26 @@
 
 #include "account.h"
 #include "constants.h"
-#include "data_handler.h"
+#include "database.h"
 #include <memory>
+#include "SQLiteCpp/Database.h"
 #include <string>
+#include "transaction.h"
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace bank_system {
 	class JuniorAccount;
 
 	class Bank {
 	public:
-		// Immediately load saved account data
-		Bank() : _accounts(load()) {}
+		// Immediately load saved account data and store database ref
+		Bank(SQLite::Database& db) : _db(db) {
+			database::init_tables(_db);
+			_accounts = load();
+			get_all_acc_history();
+		}
 
 		// Bank-level functions
 		// True if acc created, false if username taken
@@ -28,6 +34,8 @@ namespace bank_system {
 		void get_all_acc_history();
 		
 		// Admin/audit functions
+		void clear_accounts_memory();
+		void clear_transactions_memory();
 		std::vector<Account*> get_accounts_by_type(AccountType type) const;
 		std::vector<JuniorAccount*> get_at_risk_juniors(double tolerance) const; // "At risk" is defined as being within the tolerance value of the balance limit
 		std::pair<std::string, double> get_highest_balance_holder() const;
@@ -43,13 +51,16 @@ namespace bank_system {
 		TransactionStatus transfer(const std::string& from_user, const std::string& to_user, double amount);
 
 		// Saved account data load+save
-		std::unordered_map<std::string, std::unique_ptr<Account>> load();
+		std::unordered_map<std::string, std::unique_ptr<Account>> load() const;
 		void save();
 
 		// Destructor
 		~Bank();
 
 	private:
+		// Store reference to database
+		SQLite::Database& _db;
+
 		// Faster to search than a simple vector; acc username is the key
 		std::unordered_map<std::string, std::unique_ptr<Account>> _accounts;
 

@@ -2,23 +2,38 @@
 #include "bank.h"
 #include "banking_testing.h"
 #include "constants.h"
-#include "data_handler.h"
+#include "database.h"
 #include "imgui.h"
 #include "ImGui/imgui_stdlib.h"
 #include "GuiManager.h"
 #include <iostream>
 #include "simple_test.h"
+#include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/SQLiteCpp.h>
 #include <string>
 #include "Windows.h"
 
 // Forward declaration for tab renderers
 void RenderBankTestsTab();
 void RenderUserTab(bank_system::Bank& bank);
-void RenderAdminTab();
+void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank);
 
 int main() {
 	// Need this to force windows to make the program DPI aware so the font isn't blurry
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+	// Init tests
+	bank_system::init_account_tests();
+	
+	// Init database
+	SQLite::Database db("bank.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+	std::cout << "SQLiteCpp initialised successfully!" << std::endl;
+	std::cout << "SQLite C Version: " << SQLite::getLibVersion() << std::endl;
+	std::cout << "SQLiteCpp Wrapper Version: " << SQLITECPP_VERSION << std::endl;
+	database::init_tables(db);
+
+	// Init bank
+	bank_system::Bank bank(db);
 
 	// Initialise UI window
 	if (!GuiManager::Init("Banking System", 550, 350)) {
@@ -26,8 +41,6 @@ int main() {
 	}
 
 	std::cout << "Running UI..." << std::endl;
-
-	bank_system::Bank bank;
 
 	// UI loop
 	while (GuiManager::IsRunning()) {
@@ -51,7 +64,7 @@ int main() {
 			}
 
 			if (ImGui::BeginTabItem("Admin")) {
-				RenderAdminTab();
+				RenderAdminTab(db, bank);
 				ImGui::EndTabItem();
 			}
 
@@ -67,21 +80,32 @@ int main() {
 }
 
 void RenderBankTestsTab() {
+	static bool run_main = false;
 	static bool run_long = false;
+	static bool run_database = false;
 
-	if (ImGui::Button("Run Bank Tests")) {
-		run_bank_tests(run_long);
-	}
+	// Only run "main" tests if checkbox checked
+	ImGui::Checkbox("Run Main Tests", &run_main);
 
-	ImGui::SameLine();
 	// Only run long tests if checkbox checked
 	ImGui::Checkbox("Run Long Tests", &run_long);
+
+	// Only run database tests if checkbox checked
+	ImGui::Checkbox("Run Database Tests", &run_database);
+
+	if (ImGui::Button("Run Bank Tests")) {
+		run_bank_tests(run_main, run_long, run_database);
+	}
 }
 
-void RenderAdminTab() {
+void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE ALL USER DATA")) {
-		bank_system::clear_saved_data();
-		bank_system::clear_transac_data();
+		database::clear_database(db, bank);
+		database::clear_transac_data(db, bank);
+	}
+
+	if (ImGui::Button("DELETE TRANSACTIONS ONLY")) {
+		database::clear_transac_data(db, bank);
 	}
 }
 
@@ -116,11 +140,14 @@ static std::string GetTransactionErrorMessage(bank_system::TransactionStatus tra
 	case bank_system::TransactionStatus::SameAccount:
 		return "You are attempting to transfer to and from the same account!";
 		break;
+	default:
+		return "No Error";
+		break;
 	}
 }
 
 // Helper function for rendering the deposit/withdrawal overlay window
-void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
+static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
 	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(500, 0)); // Fixed 320px width, auto-fit height
@@ -160,10 +187,10 @@ void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logge
 				
 
 				if (window_name == "Deposit Funds") {
-					transaction_status = logged_in_account->deposit(funds_change_amount);
+					transaction_status = bank.deposit_to_account(logged_in_account->get_username(), funds_change_amount);
 				}
 				else if (window_name == "Withdraw Funds") {
-					transaction_status = logged_in_account->withdraw(funds_change_amount);
+					transaction_status = bank.withdraw_from_account(logged_in_account->get_username(), funds_change_amount);
 				}
 				else {
 					std::cout << "Unknown fund change type!" << std::endl;
@@ -243,7 +270,6 @@ void RenderUserTab(bank_system::Bank& bank) {
 			else {
 				password_mismatch = false;
 				bank.create_account(selectedType, accName, password, realName, age);
-				bank.save();
 
 				accName.clear();
 				realName.clear();

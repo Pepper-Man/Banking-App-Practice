@@ -1,13 +1,12 @@
 #include "account.h"
 #include "constants.h"
-#include "data_handler.h"
-#include "utility.h"
 #include <iomanip>
 #include <ios>
 #include <iostream>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include "transaction.h"
 #include <vector>
 
 namespace bank_system {
@@ -25,6 +24,10 @@ namespace bank_system {
 
 	void Account::add_to_history(const TransactionData& transaction) {
 		_history.push_back(transaction);
+	}
+
+	void Account::clear_history() {
+		_history.clear();
 	}
 
 	double Account::get_balance() const {
@@ -75,6 +78,10 @@ namespace bank_system {
 
 	void Account::set_flagged(bool val) {
 		_flagged = val;
+	}
+
+	void Account::set_psw_hash(const std::string& hash) {
+		_password_hash = hash;
 	}
 
 	bool Account::check_password(std::string password) const {
