@@ -121,6 +121,10 @@ namespace bank_system {
 		return true;
 	}
 
+	const std::unordered_map<std::string, std::unique_ptr<Account>>& Bank::get_all_accounts() const {
+		return _accounts;
+	}
+
 	void Bank::clear_accounts_memory() {
 		_accounts.clear();
 	}

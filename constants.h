@@ -39,6 +39,20 @@ namespace bank_system {
 		PasswordChange
 	};
 
+	inline std::string account_type_to_string(const AccountType& type) {
+		switch (type) {
+		case AccountType::Junior:
+			return "Junior";
+			break;
+		case AccountType::Savings:
+			return "Savings";
+			break;
+		default:
+			return "Standard";
+			break;
+		}
+	}
+
 	inline TransactionType string_to_transac_type(const std::string& s) {
 		static const std::unordered_map<std::string, TransactionType> stringToEnum{
 			{"Deposit",      TransactionType::Deposit},

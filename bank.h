@@ -34,6 +34,7 @@ namespace bank_system {
 		void get_all_acc_history();
 		
 		// Admin/audit functions
+		const std::unordered_map<std::string, std::unique_ptr<Account>>& get_all_accounts() const;
 		void clear_accounts_memory();
 		void clear_database_transactions_from_memory();
 		std::vector<Account*> get_accounts_by_type(AccountType type) const;

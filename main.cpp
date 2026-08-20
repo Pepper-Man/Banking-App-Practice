@@ -39,7 +39,7 @@ int main() {
 	bank_system::Bank bank(db);
 
 	// Initialise UI window
-	if (!GuiManager::Init("Banking System", 550, 350)) {
+	if (!GuiManager::Init("Banking System", 750, 350)) {
 		return -1;
 	}
 
@@ -101,6 +101,66 @@ void RenderBankTestsTab() {
 	}
 }
 
+void RenderAllAccountsTable(const bank_system::Bank& bank) {
+	const auto& accounts = bank.get_all_accounts();
+	if (accounts.empty()) {
+		ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No accounts registered!");
+		return;
+	}
+
+	int columns = 6; // username, password hash, real name, age, account type, balance
+
+	constexpr ImGuiTableFlags table_flags =
+		ImGuiTableFlags_BordersInnerH |
+		ImGuiTableFlags_BordersOuter |
+		ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_Resizable |
+		ImGuiTableFlags_PadOuterX;
+
+	if (ImGui::BeginTable("accountstable", columns, table_flags)) {
+		// Column headers
+		ImGui::TableSetupColumn("Username", ImGuiTableColumnFlags_WidthFixed, 180.0f);
+		ImGui::TableSetupColumn("Pswd Hash", ImGuiTableColumnFlags_WidthFixed, 180.0f);
+		ImGui::TableSetupColumn("Full Name", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+		ImGui::TableSetupColumn("Age", ImGuiTableColumnFlags_WidthFixed, 45.0f);
+		ImGui::TableSetupColumn("Account Type", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+		ImGui::TableSetupColumn("Balance", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableHeadersRow();
+
+		for (const auto& [username, acc] : accounts) {
+			if (!acc) continue;
+
+			ImGui::TableNextRow();
+
+			// Username
+			ImGui::TableNextColumn();
+			ImGui::Text(acc->get_username().c_str());
+
+			// Password hash
+			ImGui::TableNextColumn();
+			ImGui::TextDisabled(acc->get_psw_hash().c_str());
+
+			// Full name
+			ImGui::TableNextColumn();
+			ImGui::Text(acc->get_leg_name().c_str());
+
+			// Age
+			ImGui::TableNextColumn();
+			ImGui::Text("%i", acc->get_age());
+
+			// Account type
+			ImGui::TableNextColumn();
+			ImGui::Text(bank_system::account_type_to_string(acc->get_type()).c_str());
+
+			// Balance
+			ImGui::TableNextColumn();
+			ImGui::TextColored(ImVec4(0.35f, 0.85f, 0.35f, 1.0f), "£%.2f", acc->get_balance());
+		}
+	}
+
+	ImGui::EndTable();
+}
+
 void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE ALL USER DATA")) {
 		database::clear_database(db, bank);
@@ -110,6 +170,8 @@ void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
 	if (ImGui::Button("DELETE TRANSACTIONS ONLY")) {
 		database::clear_transac_data(db, bank);
 	}
+
+	RenderAllAccountsTable(bank);
 }
 
 enum class UserSubView {
@@ -225,7 +287,7 @@ static void RenderTransactionsTable(const bank_system::Account& acc) {
 		return;
 	}
 
-	std::size_t columns = 4; // type, amount, balance, time
+	int columns = 4; // type, amount, balance, time
 
 	constexpr ImGuiTableFlags table_flags =
 		ImGuiTableFlags_BordersInnerH |
