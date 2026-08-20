@@ -88,6 +88,7 @@ namespace GuiManager {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImGui::GetIO().IniFilename = nullptr; // Don't user .ini during dev
 
         // Nicer vector font
         ImGuiIO& io = ImGui::GetIO();

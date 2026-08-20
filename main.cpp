@@ -119,11 +119,11 @@ void RenderAllAccountsTable(const bank_system::Bank& bank) {
 
 	if (ImGui::BeginTable("accountstable", columns, table_flags)) {
 		// Column headers
-		ImGui::TableSetupColumn("Username", ImGuiTableColumnFlags_WidthFixed, 180.0f);
-		ImGui::TableSetupColumn("Pswd Hash", ImGuiTableColumnFlags_WidthFixed, 180.0f);
+		ImGui::TableSetupColumn("Username", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+		ImGui::TableSetupColumn("Pswd Hash", ImGuiTableColumnFlags_WidthFixed, 170.0f);
 		ImGui::TableSetupColumn("Full Name", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-		ImGui::TableSetupColumn("Age", ImGuiTableColumnFlags_WidthFixed, 45.0f);
-		ImGui::TableSetupColumn("Account Type", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+		ImGui::TableSetupColumn("Age", ImGuiTableColumnFlags_WidthFixed, 25.0f);
+		ImGui::TableSetupColumn("Account Type", ImGuiTableColumnFlags_WidthFixed, 110.0f);
 		ImGui::TableSetupColumn("Balance", ImGuiTableColumnFlags_WidthStretch);
 		ImGui::TableHeadersRow();
 
