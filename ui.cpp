@@ -17,6 +17,16 @@
 
 namespace ui {
 
+	// Some UI colour data
+	constexpr ImVec4 button_red_default = ImVec4(0.65f, 0.18f, 0.18f, 1.0f);
+	constexpr ImVec4 button_red_hovered = ImVec4(0.80f, 0.25f, 0.25f, 1.0f);
+	constexpr ImVec4 button_red_active = ImVec4(0.50f, 0.12f, 0.12f, 1.0f);
+
+	constexpr ImVec4 button_green_default = ImVec4(0.15f, 0.55f, 0.22f, 1.0f);
+	constexpr ImVec4 button_green_hovered = ImVec4(0.20f, 0.68f, 0.28f, 1.0f);
+	constexpr ImVec4 button_green_active = ImVec4(0.10f, 0.42f, 0.16f, 1.0f);
+
+
 	bool init_ui(const char* window_name, int width, int height) {
 		// Need this to force windows to make the program DPI aware so the font isn't blurry
 		SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -58,7 +68,7 @@ namespace ui {
 	static void RenderFundsChangeModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(500, 0)); // Fixed 320px width, auto-fit height
+		ImGui::SetNextWindowSize(ImVec2(500, 0)); // Fixed 500px width, auto-fit height
 
 		static bank_system::TransactionStatus transaction_status{};
 
@@ -75,9 +85,9 @@ namespace ui {
 			ImGui::Spacing();
 
 			// Cancel button (red)
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.12f, 0.12f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Button, button_red_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_red_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_red_active);
 			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
 				funds_change_amount = 0.0;
 				ImGui::CloseCurrentPopup();
@@ -87,12 +97,11 @@ namespace ui {
 			ImGui::SameLine();
 
 			// Confirm button (green)
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.55f, 0.22f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.68f, 0.28f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.42f, 0.16f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Button, button_green_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_green_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_green_active);
 			if (ImGui::Button("Confirm", ImVec2(120, 0))) {
 				if (funds_change_amount > 0.0) {
-
 
 					if (window_name == "Deposit Funds") {
 						transaction_status = bank.deposit_to_account(logged_in_account->get_username(), funds_change_amount);
@@ -107,6 +116,70 @@ namespace ui {
 					if (transaction_status == bank_system::TransactionStatus::Success) {
 						bank.save();
 						funds_change_amount = 0.0;
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+			ImGui::PopStyleColor(3);
+
+			// If error occurred, show error message to user
+			if (transaction_status != bank_system::TransactionStatus::Success) {
+				ImGui::Spacing();
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), GetTransactionErrorMessage(transaction_status).c_str());
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	// Helper function for rendering the transfer overlay window
+	static void RenderTransferWindowModal(bank_system::Bank& bank, bank_system::Account* logged_in_account, const std::string& window_name, const std::string& display_text) {
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(500, 0));
+
+		static bank_system::TransactionStatus transaction_status{};
+
+		if (ImGui::BeginPopupModal(window_name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+			static double transfer_amount;
+			static std::string recipient_acc_name;
+			ImGui::Text(display_text.c_str());
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::Text("£");
+			ImGui::SameLine();
+			ImGui::InputDouble("##transferamount", &transfer_amount, 0.0, 0.0, "%.2f");
+
+			ImGui::Spacing();
+			ImGui::InputTextWithHint("##recipient", "Recipient account name...", &recipient_acc_name);
+			
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Cancel button (red)
+			ImGui::PushStyleColor(ImGuiCol_Button, button_red_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_red_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_red_active);
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				transfer_amount = 0.0;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::PopStyleColor(3);
+
+			ImGui::SameLine();
+
+			// Confirm button (green)
+			ImGui::PushStyleColor(ImGuiCol_Button, button_green_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_green_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_green_active);
+			if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+				if (transfer_amount > 0.0) {
+
+					transaction_status = bank.transfer(logged_in_account->get_username(), recipient_acc_name, transfer_amount);
+
+					if (transaction_status == bank_system::TransactionStatus::Success) {
+						bank.save();
+						transfer_amount = 0.0;
 						ImGui::CloseCurrentPopup();
 					}
 				}
@@ -449,6 +522,11 @@ namespace ui {
 				ImGui::OpenPopup("Withdraw Funds");
 			}
 			RenderFundsChangeModal(bank, logged_in_account, "Withdraw Funds", "Enter amount to withdraw:");
+
+			if (ImGui::Button("Transfer")) {
+				ImGui::OpenPopup("Transfer Funds");
+			}
+			RenderTransferWindowModal(bank, logged_in_account, "Transfer Funds", "Enter amount to transfer:");
 
 			if (ImGui::Button(show_transaction_button_text.c_str())) {
 				if (show_transactions) {
