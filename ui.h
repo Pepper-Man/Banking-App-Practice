@@ -1,10 +1,7 @@
 #pragma once
 
-#include "account.h"
 #include "bank.h"
-#include "constants.h"
 #include <SQLiteCpp/Database.h>
-#include <string>
 
 namespace ui {
 	enum class UserSubView {

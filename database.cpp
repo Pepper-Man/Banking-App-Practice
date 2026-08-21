@@ -2,11 +2,15 @@
 #include "bank.h"
 #include <chrono>
 #include "constants.h"
+#include <cstdlib>
 #include "database.h"
+#include <exception>
+#include <iostream>
 #include "junior_account.h"
 #include <memory>
 #include "savings_account.h"
 #include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/Exception.h>
 #include <SQLiteCpp/Statement.h>
 #include <string>
 #include "transaction.h"
@@ -15,38 +19,55 @@
 #include <vector>
 
 namespace database {
+	SQLite::Database open_database(const std::string& db_path) {
+		try {
+			return SQLite::Database(db_path, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Database error: " << e.what() << std::endl;
+			std::exit(EXIT_FAILURE);
+		}
+	}
 
 	// Database schema/admin functions
 
-	void init_tables(SQLite::Database& db) {
-		db.exec("PRAGMA foreign_keys = ON;");
+	bool init_tables(SQLite::Database& db) {
+		try {
+			db.exec("PRAGMA foreign_keys = ON;");
 
-		// Create accounts table
-		db.exec(R"(
-			CREATE TABLE IF NOT EXISTS accounts (
-				id				INTEGER PRIMARY KEY AUTOINCREMENT,
-				username		TEXT UNIQUE NOT NULL,
-				password		TEXT NOT NULL,
-				real_name		TEXT NOT NULL,
-				age				INTEGER NOT NULL,
-				account_type	INTEGER NOT NULL,
-				balance			REAL NOT NULL DEFAULT 0.0,
-				acc_limit		REAL NULL
-			);
-		)");
+			// Create accounts table
+			db.exec(R"(
+				CREATE TABLE IF NOT EXISTS accounts (
+					id				INTEGER PRIMARY KEY AUTOINCREMENT,
+					username		TEXT UNIQUE NOT NULL,
+					password		TEXT NOT NULL,
+					real_name		TEXT NOT NULL,
+					age				INTEGER NOT NULL,
+					account_type	INTEGER NOT NULL,
+					balance			REAL NOT NULL DEFAULT 0.0,
+					acc_limit		REAL NULL
+				);
+			)");
 
-		// Create transactions table
-		db.exec(R"(
-			CREATE TABLE IF NOT EXISTS transactions (
-				id			INTEGER PRIMARY KEY AUTOINCREMENT,
-				username	TEXT NOT NULL,
-				type		TEXT NOT NULL,
-				amount		REAL NOT NULL,
-				balance		REAL NOT NULL,
-				time		INTEGER NOT NULL,
-				FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE ON UPDATE CASCADE
-			);
-		)");
+				// Create transactions table
+				db.exec(R"(
+				CREATE TABLE IF NOT EXISTS transactions (
+					id			INTEGER PRIMARY KEY AUTOINCREMENT,
+					username	TEXT NOT NULL,
+					type		TEXT NOT NULL,
+					amount		REAL NOT NULL,
+					balance		REAL NOT NULL,
+					time		INTEGER NOT NULL,
+					FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE ON UPDATE CASCADE
+				);
+			)");
+
+			return true;
+		}
+		catch (const SQLite::Exception& e) {
+			std::cerr << "Failed to initialise database tables: " << e.what() << std::endl;
+			return false;
+		}
 	}
 
 	void clear_database(SQLite::Database& db, bank_system::Bank& bank) {

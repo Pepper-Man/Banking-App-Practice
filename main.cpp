@@ -10,14 +10,20 @@
 
 int main() {
 	// Init tests
-	bank_system::init_account_tests();
+	if (!bank_system::init_account_tests()) {
+		std::cerr << "Failed to initialise bank tests.\n";
+		return EXIT_FAILURE;
+	}
 	
 	// Init database
-	SQLite::Database db("bank.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+	SQLite::Database db = database::open_database("bank.db");
 	std::cout << "SQLiteCpp initialised successfully!" << std::endl;
 	std::cout << "SQLite C Version: " << SQLite::getLibVersion() << std::endl;
 	std::cout << "SQLiteCpp Wrapper Version: " << SQLITECPP_VERSION << std::endl;
-	database::init_tables(db);
+	if (!database::init_tables(db)) {
+		std::cerr << "Failed to initialize database schema.\n";
+		return EXIT_FAILURE;
+	}
 
 	// Init bank
 	bank_system::Bank bank(db);

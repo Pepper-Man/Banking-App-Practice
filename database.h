@@ -14,8 +14,10 @@ namespace bank_system {
 }
 
 namespace database {
+	SQLite::Database open_database(const std::string& db_path);
+
 	// Database schema/admin functions
-	void init_tables(SQLite::Database& db);
+	bool init_tables(SQLite::Database& db);
 	void clear_database(SQLite::Database& db, bank_system::Bank& bank);
 	void clear_transac_data(SQLite::Database& db, bank_system::Bank& bank);
 

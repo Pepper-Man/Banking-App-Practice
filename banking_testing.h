@@ -36,7 +36,7 @@
 */
 
 namespace bank_system {
-    void init_account_tests() {}
+    bool init_account_tests() { return true; }
 }
 
 // Creates an in-memory database for testing purposes
