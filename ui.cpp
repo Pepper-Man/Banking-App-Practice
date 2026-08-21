@@ -196,6 +196,97 @@ namespace ui {
 		}
 	}
 
+	static void RenderPasswordChangeModal(bank_system::Bank& bank, bank_system::Account* account) {
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(500, 0));
+
+		if (ImGui::BeginPopupModal("Change Password", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+			static std::string old_password;
+			static std::string new_password;
+			static std::string confirm_password;
+
+			// UI error flags
+			static bool show_mismatch_error = false;
+			static bool show_incorrect_old_password_error = false;
+			static bool show_empty_fields_error = false;
+
+			// Clear state whenever popup is opened
+			if (ImGui::IsWindowAppearing()) {
+				old_password.clear();
+				new_password.clear();
+				confirm_password.clear();
+				show_mismatch_error = false;
+				show_incorrect_old_password_error = false;
+				show_empty_fields_error = false;
+			}
+
+			ImGui::InputTextWithHint("##oldpasswordlabel", "Old password...", &old_password, ImGuiInputTextFlags_Password);
+			ImGui::Spacing();
+			ImGui::InputTextWithHint("##newpasswordlabel", "New password...", &new_password, ImGuiInputTextFlags_Password);
+			ImGui::Spacing();
+			ImGui::InputTextWithHint("##newpasswordconfirmlabel", "Confirm new password...", &confirm_password, ImGuiInputTextFlags_Password);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Cancel button (red)
+			ImGui::PushStyleColor(ImGuiCol_Button, button_red_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_red_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_red_active);
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::PopStyleColor(3);
+
+			ImGui::SameLine();
+
+			// Confirm button (green)
+			ImGui::PushStyleColor(ImGuiCol_Button, button_green_default);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_green_hovered);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_green_active);
+			if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+				// Reset errors on submit attempt
+				show_mismatch_error = false;
+				show_incorrect_old_password_error = false;
+				show_empty_fields_error = false;
+
+				if (old_password.empty() || new_password.empty() || confirm_password.empty()) {
+					show_empty_fields_error = true;
+				}
+				else if (new_password != confirm_password) {
+					show_mismatch_error = true;
+				}
+				else if (bank.login(account->get_username(), old_password) == nullptr) {
+					show_incorrect_old_password_error = true;
+				}
+				else if (account->change_password(old_password, new_password)) {
+					bank.save();
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::PopStyleColor(3);
+
+			if (show_empty_fields_error) {
+				ImGui::Spacing();
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not all password fields are filled!");
+			}
+
+			if (show_mismatch_error) {
+				ImGui::Spacing();
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Password confirmation does not match!");
+			}
+
+			if (show_incorrect_old_password_error) {
+				ImGui::Spacing();
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Old password is wrong!");
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
 	static void RenderTransactionsTable(const bank_system::Account& acc) {
 		const auto& history = acc.get_history();
 		if (history.empty()) {
@@ -527,6 +618,11 @@ namespace ui {
 				ImGui::OpenPopup("Transfer Funds");
 			}
 			RenderTransferWindowModal(bank, logged_in_account, "Transfer Funds", "Enter amount to transfer:");
+
+			if (ImGui::Button("Change Password")) {
+				ImGui::OpenPopup("Change Password");
+			}
+			RenderPasswordChangeModal(bank, logged_in_account);
 
 			if (ImGui::Button(show_transaction_button_text.c_str())) {
 				if (show_transactions) {
