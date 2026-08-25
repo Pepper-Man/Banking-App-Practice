@@ -353,13 +353,16 @@ namespace ui {
 		}
 	}
 
-	static void RenderCurrencySelector() {
+	static bool RenderCurrencySelector() {
 		int current_index = static_cast<int>(selected_currency);
 
 		ImGui::SetNextItemWidth(90.0f);
 		if (ImGui::Combo("##CurrencySelector", &current_index, bank_system::currency_names, IM_COUNTOF(bank_system::currency_names))) {
 			selected_currency = static_cast<bank_system::Currency>(current_index);
+			return true; // Value changed this frame
 		}
+
+		return false;
 	}
 
 	void RenderBankTestsTab() {
@@ -458,6 +461,7 @@ namespace ui {
 		static bank_system::Account* logged_in_account = nullptr;
 		static bool logged_in = false;
 		static bool log_in_failed = false;
+		bool currency_changed_this_frame = false;
 		static UserSubView activeView = UserSubView::None;
 
 		ImGui::PushID("User Home Page Scope");
@@ -484,7 +488,7 @@ namespace ui {
 			}
 
 			ImGui::SameLine();
-			RenderCurrencySelector();
+			currency_changed_this_frame = RenderCurrencySelector();
 		}
 
 		ImGui::PopID();
@@ -609,7 +613,7 @@ namespace ui {
 			ImGui::Text("Full Name: %s", logged_in_account->get_leg_name().c_str());
 			ImGui::Text("Age: %i", logged_in_account->get_age());
 
-			if (ImGui::Button("Get Balance")) {
+			if (ImGui::Button("Get Balance") || currency_changed_this_frame) {
 				acc_balance = logged_in_account->get_balance_in_currency(selected_currency);
 				has_fetched_balance = true;
 			}
