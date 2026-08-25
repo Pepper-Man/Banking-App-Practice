@@ -19,6 +19,24 @@ namespace bank_system {
 		CAD
 	};
 
+	inline constexpr const char* currency_symbols[] = {
+		"£",
+		"$",
+		"€",
+		"¥",
+		"$",
+		"$"
+	};
+
+	inline constexpr const char* currency_names[] = {
+		"GBP (£)",
+		"USD ($)",
+		"EUR (€)",
+		"JPY (¥)",
+		"AUD ($)",
+		"CAD ($)"
+	};
+
 	enum class TransactionStatus {
 		Success,
 		InsufficientFunds,

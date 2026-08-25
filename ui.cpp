@@ -26,6 +26,8 @@ namespace ui {
 	constexpr ImVec4 button_green_hovered = ImVec4(0.20f, 0.68f, 0.28f, 1.0f);
 	constexpr ImVec4 button_green_active = ImVec4(0.10f, 0.42f, 0.16f, 1.0f);
 
+	// Keep track of selected currency
+	static bank_system::Currency selected_currency = bank_system::Currency::GBP;
 
 	bool init_ui(const char* window_name, int width, int height) {
 		// Need this to force windows to make the program DPI aware so the font isn't blurry
@@ -351,6 +353,15 @@ namespace ui {
 		}
 	}
 
+	static void RenderCurrencySelector() {
+		int current_index = static_cast<int>(selected_currency);
+
+		ImGui::SetNextItemWidth(90.0f);
+		if (ImGui::Combo("##CurrencySelector", &current_index, bank_system::currency_names, IM_COUNTOF(bank_system::currency_names))) {
+			selected_currency = static_cast<bank_system::Currency>(current_index);
+		}
+	}
+
 	void RenderBankTestsTab() {
 		static bool run_main = false;
 		static bool run_long = false;
@@ -471,6 +482,9 @@ namespace ui {
 				log_in_failed = false;
 				activeView = UserSubView::LogIn;
 			}
+
+			ImGui::SameLine();
+			RenderCurrencySelector();
 		}
 
 		ImGui::PopID();
@@ -596,12 +610,14 @@ namespace ui {
 			ImGui::Text("Age: %i", logged_in_account->get_age());
 
 			if (ImGui::Button("Get Balance")) {
-				acc_balance = logged_in_account->get_balance();
+				acc_balance = logged_in_account->get_balance_in_currency(selected_currency);
 				has_fetched_balance = true;
 			}
 			if (has_fetched_balance) {
 				ImGui::SameLine();
-				ImGui::Text("£%.2f", acc_balance);
+				int currency_index = static_cast<int>(selected_currency);
+				const char* currency_symbol = bank_system::currency_symbols[currency_index];
+				ImGui::Text("%s%.2f", currency_symbol, acc_balance);
 			}
 
 			if (ImGui::Button("Deposit")) {
