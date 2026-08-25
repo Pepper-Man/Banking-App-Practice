@@ -305,6 +305,10 @@ namespace ui {
 			ImGuiTableFlags_Resizable |
 			ImGuiTableFlags_PadOuterX;
 
+		// Get currency symbol
+		const char* curr_symbol = bank_system::currency_symbols[static_cast<int>(selected_currency)];
+		double exchange_rate_multiplier = bank_system::exchange_rates.at(selected_currency);
+
 		if (ImGui::BeginTable("transactionstable", columns, table_flags)) {
 			// Column headers
 			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100.0f);
@@ -316,6 +320,10 @@ namespace ui {
 			// History data
 			for (auto it = history.rbegin(); it != history.rend(); it++) {
 				const bank_system::TransactionData& transaction = *it;
+
+				// Handle currency exchange rate
+				double display_balance = transaction._balance * exchange_rate_multiplier;
+				double display_amount = transaction._amount * exchange_rate_multiplier;
 
 				ImGui::TableNextRow();
 
@@ -333,11 +341,11 @@ namespace ui {
 					? ImVec4(0.35f, 0.85f, 0.35f, 1.0f)   // Soft green
 					: ImVec4(0.90f, 0.40f, 0.40f, 1.0f);  // Soft red
 
-				ImGui::TextColored(amount_color, "%s£%.2f", is_deposit ? "+" : "-", transaction._amount);
+				ImGui::TextColored(amount_color, "%s%s%.2f", is_deposit ? "+" : "-", curr_symbol, display_amount);
 
 				// Balance
 				ImGui::TableNextColumn();
-				ImGui::Text("£%.2f", transaction._balance);
+				ImGui::Text("%s%.2f", curr_symbol, display_balance);
 
 				// Time
 				ImGui::TableNextColumn();
