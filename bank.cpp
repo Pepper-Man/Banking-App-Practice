@@ -82,6 +82,8 @@ namespace bank_system {
 				log_transac(acc.get(), TransactionType::Interest, interest);
 				transactions_added++;
 			}
+
+			Bank::save();
 		}
 		// Catch ANY exception
 		catch (const std::exception& e) {

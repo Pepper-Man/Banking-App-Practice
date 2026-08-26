@@ -335,7 +335,7 @@ namespace ui {
 
 				// Amount (green incoming, red outgoing)
 				ImGui::TableNextColumn();
-				bool is_deposit = (type_str.find("Deposit") != std::string::npos || type_str.find("Transfer In") != std::string::npos);
+				bool is_deposit = (type_str.find("Deposit") != std::string::npos || type_str.find("Interest") != std::string::npos || type_str.find("Transfer In") != std::string::npos);
 
 				ImVec4 amount_color = is_deposit
 					? ImVec4(0.35f, 0.85f, 0.35f, 1.0f)   // Soft green
@@ -453,6 +453,12 @@ namespace ui {
 	}
 
 	void RenderAdminTab(SQLite::Database& db, bank_system::Bank& bank) {
+		if (ImGui::Button("Apply monthly interest")) {
+			bank.apply_monthly_interest(0.10f);
+		}
+
+		ImGui::Separator();
+
 		if (ImGui::Button("DELETE ALL USER DATA")) {
 			database::clear_database(db, bank);
 			database::clear_transac_data(db, bank);
