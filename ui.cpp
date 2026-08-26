@@ -289,8 +289,8 @@ namespace ui {
 		}
 	}
 
-	static void RenderTransactionsTable(const bank_system::Account& acc) {
-		const auto& history = acc.get_history();
+	static void RenderTransactionsTable(const bank_system::Account& acc, const bank_system::TransactionType& transac_type) {
+		const auto& history = acc.get_history_by_type(transac_type);
 		if (history.empty()) {
 			ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No transaction history found.");
 			return;
@@ -664,7 +664,28 @@ namespace ui {
 			}
 
 			if (show_transactions) {
-				RenderTransactionsTable(*logged_in_account);
+				// Adds a dropdown Combo to allow the user to filter transaction history by type
+				static bank_system::TransactionType selected_type_filter = bank_system::TransactionType::All;
+
+				ImGui::SetNextItemWidth(180.0f);
+				if (ImGui::BeginCombo("##transactionfilter", bank_system::transac_type_to_string(selected_type_filter).c_str())) {
+					for (int i = 0; i < static_cast<int>(bank_system::TransactionType::Count); i++) {
+						auto value = static_cast<bank_system::TransactionType>(i);
+						bool is_selected = (selected_type_filter == value);
+
+						if (ImGui::Selectable(bank_system::transac_type_to_string(value).c_str(), is_selected)) {
+							selected_type_filter = value;
+						}
+
+						if (is_selected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
+				RenderTransactionsTable(*logged_in_account, selected_type_filter);
 			}
 
 			break;

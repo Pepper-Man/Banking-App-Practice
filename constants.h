@@ -49,12 +49,14 @@ namespace bank_system {
 	};
 
 	enum class TransactionType {
+		All,
 		Deposit,
 		Withdrawal,
 		TransferOut,
 		TransferIn,
 		Interest,
-		PasswordChange
+		PasswordChange,
+		Count
 	};
 
 	inline std::string account_type_to_string(const AccountType& type) {
@@ -73,6 +75,7 @@ namespace bank_system {
 
 	inline TransactionType string_to_transac_type(const std::string& s) {
 		static const std::unordered_map<std::string, TransactionType> stringToEnum{
+			{"All",			 TransactionType::All},	
 			{"Deposit",      TransactionType::Deposit},
 			{"Withdrawal",   TransactionType::Withdrawal},
 			{"Transfer Out", TransactionType::TransferOut},
@@ -91,6 +94,7 @@ namespace bank_system {
 
 	inline std::string transac_type_to_string(TransactionType type) {
 		switch (type) {
+			case TransactionType::All:				return "All";
 			case TransactionType::Deposit:			return "Deposit";
 			case TransactionType::Withdrawal:		return "Withdrawal";
 			case TransactionType::TransferOut:		return "Transfer Out";

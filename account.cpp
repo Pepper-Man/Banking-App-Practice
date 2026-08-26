@@ -70,7 +70,7 @@ namespace bank_system {
 		std::vector<TransactionData> found_transacs;
 
 		for (const TransactionData& transac : _history) {
-			if (transac._type == type) found_transacs.push_back(transac);
+			if (type == TransactionType::All || transac._type == type) found_transacs.push_back(transac);
 		}
 
 		return found_transacs;
